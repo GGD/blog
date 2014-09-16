@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails 4(3) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-05-31T16:25:00.000Z" itemprop="datePublished">
+          6月 1 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails 4(3)</h1>
+    <section class="post-content">
+      <p>紀錄 Rails 3 to Rails 4 的一些改變。<br><a id="more"></a></p>
+<h2 id="SCOPES">SCOPES</h2>
+<p>在 Rails 3 當中，<code>scope</code> 的寫法如下（稱為 eager-evaluated scoped）：<br>    scope :sold, where(state: ‘sold’)<br>    default_scope where(state: ‘available’)</p>
+<p>這樣的寫法在 Rails 4 也被摒棄掉，而改為：<br>    scope :sold, -&gt;{ where(state: ‘sold’) }<br>後面必須改為 proc object 才行。  </p>
+<p>而 <code>default_scope</code> 後面則可以接 proc object 或 block：<br>    default_scope { where(state ‘available’) }<br>    default_scope -&gt;{ where(state ‘available’) }</p>
+<h3 id="EAGER-LOADED_SCOPES">EAGER-LOADED SCOPES</h3>
+<p>Rails 3 <code>scope</code> 寫法被摒棄的原因如下：<br>    scope :recent, where(published_at: 2.weeks.ago)</p>
+<p>在 class 被載入時，date 只會解析一次，之後用到這個 <code>scope</code> 時就會沿用之前所解析的 date，因此 published_at 就固定在那天而不會改變了。  </p>
+<p>另一個例子：<br>    scope :recent, -&gt;{ where(published_at: 2.weeks.ago) }<br>    scope :recent_red, recent.where(color: ‘red’)</p>
+<p>雖然第一個 <code>scope</code> 有正確使用 proc object 來避免 date 固定，但第二個 <code>scope</code> 卻仍然會使用先前被解析的 recent，而導致 date 不正確。  </p>
+<p>為了避免這些情形，Rails 4 才全面改用 proc object 確保這些 condition 都會在需要的時候進行解析：<br>    scope :recent, -&gt;{ where(published_at: 2.weeks.ago) }<br>    scope :recent_red, -&gt;{ recent.where(color: ‘red’) }</p>
+<h2 id="RELATION#NONE">RELATION#NONE</h2>
+<p>在 Rails 3 當中，我們常常會列出某個 user 的 posts，再針對這些 posts 進行處理。當 posts 為 <code>[]</code> 時，就必須特別處理（否則會出現 NoMethodError），比如：</p>
+<figure class="highlight"><figcaption><span>models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  </div><div class="line">  <span class="function"><span class="keyword">def</span> </span>visible_posts</div><div class="line">    <span class="keyword">case</span> role</div><div class="line">    <span class="keyword">when</span> <span class="string">'Country Manager'</span></div><div class="line">      <span class="constant">Post</span>.where(<span class="symbol">country:</span> country)</div><div class="line">    <span class="keyword">when</span> <span class="string">'Reviewer'</span></div><div class="line">      <span class="constant">Post</span>.published</div><div class="line">    <span class="keyword">when</span> <span class="string">'Bad User'</span></div><div class="line">      [] <span class="comment"># represents empty collectoin</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>controllers/posts_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">...</span></div><div class="line">@posts = current_user.visible_posts</div><div class="line"></div><div class="line"><span class="keyword">if</span> @posts.any?</div><div class="line">  @posts.recent</div><div class="line"><span class="keyword">else</span></div><div class="line">  []</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>看起來非常的繁瑣。  </p>
+<p>Rails 4 提供了 <code>none</code> method 來解決：</p>
+<figure class="highlight"><figcaption><span>models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  </div><div class="line">  <span class="function"><span class="keyword">def</span> </span>visible_posts</div><div class="line">    <span class="keyword">case</span> role</div><div class="line">    <span class="keyword">when</span> <span class="string">'Country Manager'</span></div><div class="line">      <span class="constant">Post</span>.where(<span class="symbol">country:</span> country)</div><div class="line">    <span class="keyword">when</span> <span class="string">'Reviewer'</span></div><div class="line">      <span class="constant">Post</span>.published</div><div class="line">    <span class="keyword">when</span> <span class="string">'Bad User'</span></div><div class="line">      <span class="constant">Post</span>.none   <span class="comment"># returns ActiveRecord::Relation</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>controllers/posts_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">...</span></div><div class="line">@posts = current_user.visible_posts</div><div class="line">@posts.recent</div></pre></td></tr></table></figure>
+
+<p><code>@posts.recent</code> 有可能會回傳下列三種：<br>    Post.where(country: country).recent<br>    Post.published.recent<br>    Post.none.recent</p>
+<p>Post.none 不會使用到 database，並且會回傳 ActiveRecord::Relation，且後續再 chain 其他 method 比如 <code>recent</code> 的時候，都會是 empty collection。</p>
+<h2 id="RELATION#NOT">RELATION#NOT</h2>
+<p>在 Rails 3 當中，有時候會想要撈出 “非”某個 user 的 posts，通常會這樣寫：<br>    Post.where(‘author != ?’, author)</p>
+<p>但是當 author 為 nil 的時候，就會產生出錯誤的 query ：<br>    SELECT “posts”.* FROM “posts” WHERE (author != NULL)  # incorrect SQL syntax</p>
+<p>所以往往會多加一些條件式來避免產生錯誤的 query：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> author</div><div class="line">  Post.where(<span class="attribute">'author</span> != ?', author)</div><div class="line"><span class="keyword">else</span></div><div class="line">  Post.where(<span class="attribute">'author</span> <span class="keyword">IS</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span>')</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>太麻煩了…<br><br>Rails 4 提供新的寫法，只要一行就可以解決：<br>    Post.where.not(author: author)<br><br>會自動產生：<br>    SELECT “posts”.* FROM “posts” WHERE (author IS NOT NULL)<br><br>## RELATION#ORDER<br><br>假設我們有個 User model，裡頭有一個 default_scope：<br><figure class="highlight"><figcaption><span>models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  default_scope { order(<span class="symbol">:name</span>) }</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>然後在某個地方又使用了一次 <code>order</code>：<br>    User.order(“created_at DESC”)</p>
+<p>猜猜看哪個 <code>order</code> 會先被執行？  </p>
+<p>在 Rails 3 當中，會先針對 name 進行排序：<br>    SELECT * FROM users ORDER BY name asc, created_at DESC</p>
+<p>順序是越後面（越新）使用的 <code>order</code> 會往後加。  </p>
+<p>但是在 Rails 4 則剛好相反，後來使用的 <code>order</code> 其順序反而會越前面：<br>    SELECT * FROM users ORDER BY created_at DESC, name asc</p>
+<h3 id="more_about_RELATION#ORDER">more about RELATION#ORDER</h3>
+<p>在 Rails 3，反向排序的寫法是：<br>    User.order(‘created_at DESC’)</p>
+<p>但是在 Rails 4 當中，<code>DESC</code> 可以改用 hash：<br>    User.order(created_at: :DESC)</p>
+<p>如果要多個 <code>order</code> 的話，可以這樣寫：<br>    User.order(:name, created_at: :desc)</p>
+<p>這樣會產生：<br>    SELECT * FROM users ORDER BY name asc, created_at DESC<br>(<code>order</code> 預設為 <code>asc</code>)</p>
+<h2 id="RELATION#REFERENCES">RELATION#REFERENCES</h2>
+<p>在 Rails 3 當中假設一個情境：<br>    Post.includes(:comments).where(“comments.name = ‘foo’”)<br><code>Post</code> 針對 <code>comments</code> 使用 eager loading，並想要撈出 comments.name 為 foo 的 string。<br>這樣的寫法在 Rails 4 已經被摒棄掉了，原因在於 Rails 必須深入到 SQL string 當中來確認參照了什麼 table，這種寫法被認為難以理解且很容易出錯。<br>Rails 4 裡，必須要明確地寫出是參照哪個 table：<br>    Post.includes(:comments).where(“comments.name = ‘foo’”).references(:comments)</p>
+<p>但在某些情況下是不用加 <code>references</code> 的，比如 condition 是以 hash 的形式來下：<br>    Post.includes(:comments).where(comments: { name: ‘foo’} )<br>    Post.includes(:comments).where(‘comments.name’ =&gt; ‘foo’)</p>
+<p>或是純粹排序也不用：<br>    Post.includes(:comments).order(‘comments.name’)</p>
+<h2 id="ACTIVEMODEL::MODEL">ACTIVEMODEL::MODEL</h2>
+<p>在 Rails 3 裡，我們可以使用 active model 把任何 Ruby class 所產生的 objects 變成 active record object，且不需要任何對應的 database table。比如：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">SupportTicket</span></span></div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::Conversion</span></div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::Validations</span></div><div class="line">  extend <span class="constant">ActiveModel::Naming</span></div><div class="line"></div><div class="line">  <span class="keyword">attr_accessor</span> <span class="symbol">:title</span>, <span class="symbol">:description</span></div><div class="line"></div><div class="line">  validates_presence_of <span class="symbol">:title</span></div><div class="line">  validates_presence_of <span class="symbol">:description</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>透過 mixed-in ActiveModel 的 module，就可以變成 active record object 出現在 <code>form_helper</code>：<br>    form_for(@support_ticket) do |f|<br>      …<br>    end</p>
+<p>或是類似 ActiveRecord model：<br>    SupportTicket.new(support_params)<br>    @support_ticket.valud?<br>    @support_ticket.errors<br>    @support_ticket.to_param</p>
+<p>在 Rails 4 裡，mixed-in 的寫法可以簡化成一段即可：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">SupportTicket</span></span></div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::Model</span></div><div class="line"></div><div class="line">  <span class="keyword">attr_accessor</span> <span class="symbol">:title</span>, <span class="symbol">:description</span></div><div class="line"></div><div class="line">  validates_presence_of <span class="symbol">:title</span></div><div class="line">  validates_presence_of <span class="symbol">:description</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p><code>Model</code> 這個 module 就包含了 Rails 3 寫法的那些東東：</p>
+<figure class="highlight"><figcaption><span>activemodel/lib/active_model/model.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.includes(base)  base.class_eval </span><span class="keyword">do</span></div><div class="line">    extend <span class="constant">ActiveModel:</span><span class="symbol">:Naming</span></div><div class="line">    extend <span class="constant">ActiveModel:</span><span class="symbol">:Translation</span></div><div class="line">    <span class="keyword">include</span> <span class="constant">ActiveModel:</span><span class="symbol">:Validations</span></div><div class="line">    <span class="keyword">include</span> <span class="constant">ActiveModel:</span><span class="symbol">:Conversion</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://codeschool.com" target="_blank" rel="external">CodeSchool</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/06/01/rails-4-3/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/06/01/rails-4-3/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/06/01/rails-4-3/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/06/02/rails-4-4/">
+        ← Rails 4(4)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/05/31/rails-4-2/">
+        Rails 4(2) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

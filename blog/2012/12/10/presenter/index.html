@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>presenter | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-10T07:15:00.000Z" itemprop="datePublished">
+          12月 10 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">presenter</h1>
+    <section class="post-content">
+      <p>Presenter 筆記。<br><a id="more"></a></p>
+<p>關於 Presenter 可以看 <a href="http://joncanady.com/blog/2012/01/11/presenters-cleaning-up-rails-views/" target="_blank" rel="external">這篇</a> 文章。</p>
+<h2 id="假設情境">假設情境</h2>
+<p>Twitter 左邊的資訊，來自許多的 models：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@followers_tweets</span> = current_user.followers_tweets.limit(<span class="number">20</span>)</div><div class="line">  <span class="variable">@recent_tweet</span> = current_user.tweets.first</div><div class="line">  <span class="variable">@following</span> = current_user.following.limit(<span class="number">5</span>)</div><div class="line">  <span class="variable">@followers</span> = current_user.followers.limit(<span class="number">5</span>)</div><div class="line">  <span class="variable">@recent_favorite</span> = current_user.favorite_tweets.first</div><div class="line">  <span class="variable">@recent_listed</span> = current_user.recently_listed.limit(<span class="number">5</span>)</div><div class="line"></div><div class="line">  <span class="keyword">if</span> current_user.trend_option == <span class="string">"worldwide"</span></div><div class="line">    <span class="variable">@trends</span> = <span class="constant">Trend</span>.worldwide.by_promoted.limit(<span class="number">10</span>)</div><div class="line">  <span class="keyword">else</span></div><div class="line">    <span class="variable">@trends</span> = <span class="constant">Trend</span>.filter_by(current_user.trend_option).limit(<span class="number">10</span>)</div><div class="line">  <span class="keyword">end</span></div><div class="line">  ...</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>可以看到上面用了許多 instant variables，這樣不但難以維護，要測試時也不方便。<br>這時候如果用 Presenter，只要一行就可以解決：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">index</span>  <span class="variable">@presenter</span> = <span class="constant">Tweets:</span><span class="symbol">:IndexPresenter</span>.new(current_user)<span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Presenter">Presenter</h2>
+<p>首先設定一個資料夾專門放置 presenter。然後設定 app 自動讀取此一資料夾：</p>
+<figure class="highlight"><figcaption><span>/config/application.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">config.autoload_paths += %W(#{<span class="ruby">config.root}</span>/presenters)</div></pre></td></tr></table></figure>
+
+<p>接著實作 presenter：</p>
+<figure class="highlight"><figcaption><span>/app/presenters/tweets/index_presenter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tweets::IndexPresenter</span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>initialize(user)</div><div class="line">    <span class="variable">@user</span> = user</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>followers_tweets	<span class="comment"># 把原本在 controller 的 <span class="yardoctag">@followers</span>_tweets 放進來</span></div><div class="line">    <span class="variable">@user</span>.followers_tweets.limit(<span class="number">20</span>)</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>recent_tweet</div><div class="line">    <span class="variable">@user</span>.tweet.first</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>trends</div><div class="line">    <span class="keyword">if</span> <span class="variable">@user</span>.trend_option == <span class="string">"worldwide"</span></div><div class="line">      <span class="constant">Trend</span>.worldwide.by_promoted.limit(<span class="number">10</span>)</div><div class="line">    <span class="keyword">else</span></div><div class="line">      <span class="constant">Trend</span>.filter_by(<span class="variable">@user</span>.trend_option).limit(<span class="number">10</span>)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>接著在 view 當中就可以直接用了：</p>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="variable">%=</span> <span class="variable">@prensenter</span>.recent_tweet.body <span class="variable">%&gt;</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/10/presenter/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/10/presenter/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/10/presenter/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/11/memoization/">
+        ← memoization
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/06/models-without-database/">
+        models without database →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

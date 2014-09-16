@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Strong Parameters | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-08-30T05:56:00.000Z" itemprop="datePublished">
+          8月 30 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Strong Parameters</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/rails/strong_parameters/" target="_blank" rel="external">Strong Parameters</a> 是一套加強 attr_accessible 機制來處理 mass assignment 的套件。<br><a id="more"></a></p>
+<p>在撰寫專案的時候，常常要設定 models 裡面的 <code>attr_accessible</code>，但在某些情況下，比如依照目前使用者的權限來給予不同的設定時，會顯得過於繁瑣。<br>以論壇為例，假設一般使用者皆可修改文章名稱，但只有管理員可設定文章是否至頂。</p>
+<figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Topic</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:posts</span></div><div class="line">  accepts_nested_attributes_for <span class="symbol">:posts</span></div><div class="line"></div><div class="line">  attr_accessible <span class="symbol">:name</span>, <span class="symbol">as:</span> <span class="symbol">:user</span></div><div class="line">  attr_accessible <span class="symbol">:name</span>, <span class="symbol">:sticky</span>, <span class="symbol">as:</span> <span class="symbol">:admin</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>其中的 <code>name</code> 與 <code>sticky</code> 屬性都可以用 mass assignment 的方式來更新，但必須先檢查使用者的身份為何（透過 <code>attr_accessible</code> 的 <code>as</code> 選項）<br>因此，當要 create 或 update <code>Topic</code> 的時候，也必須要把 <code>as</code> 這個選項傳進去：<br><figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>create</div><div class="line">  <span class="variable">@topic</span> = <span class="constant">Topic</span>.new(params[<span class="symbol">:topic</span>], <span class="symbol">as:</span> current_user.try(<span class="symbol">:admin?</span>) ? <span class="symbol">:admin</span> <span class="symbol">:</span> <span class="symbol">:user</span>)</div><div class="line">  <span class="keyword">if</span> <span class="variable">@topic</span>.save</div><div class="line">    redirect_to <span class="variable">@topic</span>, <span class="symbol">notice:</span> <span class="string">"Created topic."</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">:new</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>此時如果以 <code>admin</code> 身份來修改 <code>sticky</code> 就可正確更新；但如果是用 <code>user</code> 身份來修改 <code>sticky</code> 的話，就會跳出 exception：<br>    Can’t mass-assign protected attributes: sticky</p>
+<p>這種方法仍有許多不便之處：比如判斷使用者身份如果一多，那整段程式就會變得更加複雜，而且將判斷身份寫在每個 model 裡面也不是個好作法。再者，如果之後要增減 topic 的屬性，這段程式碼看起來也相對地不太靈活。</p>
+<h4 id="Strong_Parameters">Strong Parameters</h4>
+<p>鑑於此，Yehuda Katz 便提出了一些<a href="https://gist.github.com/1974187" target="_blank" rel="external">想法</a>，其中一項就是在 form 當中加入 signed token，當送出 form 的時候就根據這個 signed token 來允許哪些欄位可以存取。然而這個解法卻有安全疑慮，而且如果使用 API ，或是存在於 form 之外的欄位便無法被允許存取，這個方法後來也沒受到太大迴響。另一個想法就相對實際且吸引到眾人的目光，其作法是將這個保護行為從 model 移到 controller 當中。<br>不久後， DHH 釋出了 Strong Parameters 這個 gem 來解決此一問題，作法是透過呼叫 <code>permit</code> 來篩選可通過的 parameters。目前也打算將此一功能加入到 Rails 4 當中。  </p>
+<p>接下來要把 Strong Parameters 加入到論壇裡，修改 Gemfile 之後，接著執行 <code>bundle</code> 來安裝。</p>
+<figure class="highlight"><figcaption><span>/Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'strong_parameters'</span></div></pre></td></tr></table></figure>
+
+<p>在 <code>/config/application.rb</code> 裡，其中有個選項會強制讓 model 使用 <code>attr_accessible</code>，因現在要使用 <code>strong_parameters</code> ，故要將這個選項註解掉：</p>
+<figure class="highlight"><figcaption><span>/config/application.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"># Enforce whitelist mode <span class="keyword">for</span> mass assignment.</div><div class="line"># This will <span class="keyword">create</span> an <span class="keyword">empty</span> whitelist <span class="keyword">of</span> attributes available <span class="keyword">for</span> mass-assignment <span class="keyword">for</span> all models</div><div class="line"># <span class="keyword">in</span> your app. <span class="keyword">As</span> such, your models will need <span class="keyword">to</span> explicitly whitelist <span class="keyword">or</span> blacklist accessible</div><div class="line"># parameters <span class="keyword">by</span> <span class="keyword">using</span> an attr_accessible <span class="keyword">or</span> attr_protected declaration.</div><div class="line"># config.active_record.whitelist_attributes = <span class="keyword">true</span>  #這段要註解起來</div></pre></td></tr></table></figure>
+
+<p>接著把 <code>Topic</code> model 的 <code>attr_accessible</code> 給拿掉：</p>
+<figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Topic</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:posts</span></div><div class="line">  accepts_nested_attributes_for <span class="symbol">:posts</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>這樣一來將導致 model 暴露在未受保護的環境之下，於是用 Strong Parameters 來解決此一問題，做法是在 model 之中 include <code>ActiveModel::ForbiddenAttributesProtection</code>：</p>
+<figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Topic</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:posts</span></div><div class="line">  accepts_nested_attributes_for <span class="symbol">:posts</span></div><div class="line">  </div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::ForbiddenAttributesProtection</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>但要在每個 model 都加入，難保會有遺忘的時候。比較好的做法是將其加到 <code>ActiveRecord::Base</code> 之中，並放到 initializers 裡。</p>
+<figure class="highlight"><figcaption><span>/config/initializers/strong_parameters.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="tag">ActiveRecord</span><span class="pseudo">::Base</span><span class="class">.send</span>(<span class="pseudo">:include</span>,  <span class="tag">ActiveModel</span><span class="pseudo">::ForbiddenAttributesProtection)</span></div></pre></td></tr></table></figure>
+
+<p>重新啓動專案 app 之後，就可以將 Strong Parameters 作為預設的保護機制。但是此時再試著更新 Topic 時，卻會跑出 <code>ActiveModel::ForbiddenAttributes</code> 錯誤訊息，因為預設為不能更新 model。要解決此一問題，必須要在 <code>TopicController</code> 當中， <code>update</code> action 裡的 parameters 呼叫 <code>permit</code> 來 mass assignment，並且把這段取代先前的 <code>as</code> 選項。</p>
+<figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>update</div><div class="line">  <span class="variable">@topic</span> = <span class="constant">Topic</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  <span class="keyword">if</span> <span class="variable">@topic</span>.update_attributes(params[<span class="symbol">:topic</span>].permit(<span class="symbol">:name</span>, <span class="symbol">:sticky</span>)</div><div class="line">    redirect_to topics_url, <span class="symbol">notice:</span> <span class="string">"Updated topic."</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">:edit</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>現在就可以更新 Topic 了。秉持著 DRY 原則，再新建一個 method 把這段 parameters 包起來：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>update</div><div class="line">  <span class="variable">@topic</span> = <span class="constant">Topic</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  <span class="keyword">if</span> <span class="variable">@topic</span>.update_attributes(topic_params)</div><div class="line">    redirect_to topics_url, <span class="symbol">notice:</span> <span class="string">"Updated topic."</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">:edit</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span> </div><div class="line"> </div><div class="line">private</div><div class="line"><span class="function"><span class="keyword">def</span> </span>topic_params</div><div class="line">  params[<span class="symbol">:topic</span>].permit(<span class="symbol">:name</span>, <span class="symbol">:sticky</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>由於是在 controller 李，因此可以更輕易地辨識身份來做相應的更新動作：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>topic_params</div><div class="line">  <span class="keyword">if</span> current_user &amp;&amp; current_user.admin?</div><div class="line">    params[<span class="symbol">:topic</span>].permit(<span class="symbol">:name</span>, <span class="symbol">:sticky</span>)</div><div class="line">  <span class="keyword">else</span></div><div class="line">    params[<span class="symbol">:topic</span>].permit(<span class="symbol">:name</span>)</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>上面那段 code 的功能就是先前 <code>attr_accessible</code> 所做的。不過這段 code 還可以更進一步改寫…如果直接呼叫 <code>permit</code>，有可能因為沒有 parameters 而出現 <code>nil</code> 錯誤，因此在可呼叫 <code>permit</code> 的時候，使用 <code>require</code> 來確保 parameters 的存在。如果要讓 model 當中所有的屬性都可以存取，可以在 <code>permit</code> 後面加上驚嘆號（admin 身份就可以這樣使用）：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">private</span></div><div class="line">def topic_params</div><div class="line">  <span class="keyword">if</span> current_user &amp;&amp; current_user.admin?</div><div class="line">    <span class="built_in">params</span>.<span class="built_in">require</span>(:topic).permit!</div><div class="line">  <span class="keyword">else</span></div><div class="line">    <span class="built_in">params</span>.<span class="built_in">require</span>(:topic).permit(:name)</div><div class="line">  <span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h4 id="Strong_Parameters_如何運作">Strong Parameters 如何運作</h4>
+<p>Strong Parameters 看起來像是定義了 <code>params</code> hash 裡的 method 來運作。<br>值得注意的是，如果只是單純傳遞一般的 hash 的話，並不能保護 model 免於 mass assignment。如以下範例，在 console 底下輸入：</p>
+<pre><code><span class="input"><span class="prompt">&gt;&gt;</span> <span class="constant">Topic</span>.new(<span class="symbol">sticky:</span> true)</span>
+<span class="output"><span class="status">=&gt;</span> <span class="value">#&lt;Topic id: nil, name: nil, sticky: true, created_at: nil, updated_at: nil&gt;</span></span>
+</code></pre><p>而 Strong Parameters 則是覆寫了 controller 裡的 <code>params</code> method，並作為 <code>ActionController::Parameters</code> 的一個 instance 來傳遞。如果在這個 class 下新建了一個 instance 並傳遞 hash 給它，那就會回得一個 hash，但這個 hash 卻會多了一些額外的 method 比如 <code>permit</code> 及 <code>require</code> 等。如果將這個 object 傳給 Topic.new，那就會跳出不能 mass assignment 的錯誤出來，如底下在 console 執行的範例：</p>
+<pre><code><span class="input"><span class="prompt">&gt;&gt;</span> params = <span class="constant">ActionController::Parameters</span>.new(<span class="symbol">sticky:</span> true)</span>
+<span class="output"><span class="status">=&gt;</span> {<span class="string">"sticky"</span>=&gt;true}</span>
+<span class="input"><span class="prompt">&gt;&gt;</span> <span class="constant">Topic</span>.new(params)</span>
+<span class="constant">ActiveModel::ForbiddenAttributes</span><span class="symbol">:</span> <span class="constant">ActiveModel::ForbiddenAttributes</span>
+</code></pre><p>這個資訊非常有用，比如說，如果這個來源值得信任（比如說測試專案時），那就可以直接傳到 model；而如果是不信任的來源，就可以透過 <code>ActionController::Parameters</code> 來傳遞，但可能會有一種狀況會發生：<code>params</code> hash 有可能會被轉成一般的 hash 進而能夠 mass assignment，雖然說此一狀況並不常發生，但仍需注意。  </p>
+<p>假設有另一個 <code>TopicsController</code> 是用來處理 API requests，這樣不止一個 controller 需要用到同樣的 params 及權限管理，那就可以把這段 code 另外做成一個 module 讓需要的 controller 來 include。</p>
+<figure class="highlight"><figcaption><span>/lib/topic_params.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">TopicParams</span></span></div><div class="line">  private</div><div class="line">  <span class="function"><span class="keyword">def</span> </span>topic_params</div><div class="line">    <span class="keyword">if</span> current_user &amp;&amp; current_user.admin?</div><div class="line">      params.<span class="keyword">require</span>(<span class="symbol">:topic</span>).permit!</div><div class="line">    <span class="keyword">else</span></div><div class="line">      params.<span class="keyword">require</span>(<span class="symbol">:topic</span>).permit(<span class="symbol">:name</span>)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span>  </div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>雖然這個 module 運作正常，但當中有兩個 interface： <code>current_user</code> 以及 <code>params</code> 都必須在 include 這個 module 前就事先定義，因此這個解法不算太有彈性。另一種較佳的作法是將其在 <code>/app/models</code> 底下新建一個 class（儘管他並不是繼承自 <code>ActiveRecord::Base</code>，但仍是一個 model）。</p>
+<figure class="highlight"><figcaption><span>/app/models/permitted_params.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">PermittedParams</span> <span class="inheritance">&lt; <span class="parent">Struct</span></span>.<span class="title">new</span>(:<span class="title">params</span>, :<span class="title">user</span>)</span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>topic</div><div class="line">    <span class="keyword">if</span> user &amp;&amp; user.admin?</div><div class="line">      params.<span class="keyword">require</span>(<span class="symbol">:topic</span>).permit!</div><div class="line">    <span class="keyword">else</span></div><div class="line">      params.<span class="keyword">require</span>(<span class="symbol">:topic</span>).permit(<span class="symbol">:name</span>)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span>  </div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>Stackoverflow 有一篇<a href="http://stackoverflow.com/questions/3275594/when-to-use-struct-instead-of-hash-in-ruby" target="_blank" rel="external">文章</a> 解釋何時該用 <a href="http://ruby-doc.org/core-1.9.3/Struct.html" target="_blank" rel="external">Struct</a>，何時該用 <a href="http://ruby-doc.org/core-1.9.3/Hash.html" target="_blank" rel="external">Hash</a>。<br>接著在 <code>ApplicationController</code> 裡使用，此步驟可以讓各個 controller 都可以直接使用這個 method。<br><figure class="highlight"><figcaption><span>/app/controllers/application_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">def permitted_params</div><div class="line">  @permitted_params ||= PermittedParams.<span class="built_in">new</span>(<span class="built_in">params</span>, current_user)</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>然後在 <code>TopicsController</code> 中呼叫這個 method：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/topics_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>update</div><div class="line">  <span class="variable">@topic</span> = <span class="constant">Topic</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  <span class="keyword">if</span> <span class="variable">@topic</span>.update_attributes(permitted_params.topic)</div><div class="line">    redirect_to topics_url, <span class="symbol">notice:</span> <span class="string">"Updated topic."</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">:edit</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p><code>PermittedParameters</code>  class 底下還可以再定義其他的 method 供不同的 controller 使用，這種作法的好處是，可以將各個 controller 中的 logic 統一放在一個地方管理。  </p>
+<p>再回去操作一次更新的動作，會發現如果是 admin 身份的話，就可以正常更新 sticky；而如果非 admin 身份，即使點選 sticky ，但仍然不會更新。<br>但現在想要再更進一步：非 admin 身份時，連 更新  sticky 的選項也看不到。因此就必須在 view 當中做 logic 判斷：</p>
+<figure class="highlight"><figcaption><span>/app/views/topics/_form.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% <span class="keyword">if</span> permitted_params.topic_attributes.include? :sticky %&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.check_box :sticky %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.label :sticky %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>要讓上述這段 code 發揮作用，要先從 <code>PermittedParams</code> class 當中加入 <code>topic_attributes</code> method：</p>
+<figure class="highlight"><figcaption><span>/app/models/permitted_params.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">PermittedParams</span> <span class="inheritance">&lt; <span class="parent">Struct</span></span>.<span class="title">new</span>(:<span class="title">params</span>, :<span class="title">user</span>)</span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>topic</div><div class="line">    params.<span class="keyword">require</span>(<span class="symbol">:topic</span>).permit(*topic_attributes)</div><div class="line">  <span class="keyword">end</span></div><div class="line">  </div><div class="line">  <span class="function"><span class="keyword">def</span> </span>topic_attributes</div><div class="line">    <span class="keyword">if</span> user &amp;&amp; user.admin?</div><div class="line">      [<span class="symbol">:name</span>, <span class="symbol">:sticky</span>]</div><div class="line">    <span class="keyword">else</span></div><div class="line">      [<span class="symbol">:name</span>]</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>現在 <code>topic</code> method 會呼叫 <code>topic_attributes</code> 來判斷 user 具有哪些 topic 屬性了。<br>接著在 <code>ApplicationController</code> 裡將此 method 做為 helper method：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/application_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>permitted_params</div><div class="line">  <span class="variable">@permitted_params</span> ||= <span class="constant">PermittedParams</span>.new(params, current_user)</div><div class="line"><span class="keyword">end</span></div><div class="line">helper_method <span class="symbol">:permitted_params</span></div></pre></td></tr></table></figure>
+
+<p>現在，程式會判斷 user 的身份來做相應的更新了。</p>
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/08/30/strong-parameters/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/08/30/strong-parameters/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/08/30/strong-parameters/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/09/19/pry/">
+        ← Pry
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/08/28/zai-sublime-text-2-shu-ru-zhong-wen-ubuntu-huan-jing/">
+        在 Sublime Text 2 輸入中文 (Ubuntu 環境) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

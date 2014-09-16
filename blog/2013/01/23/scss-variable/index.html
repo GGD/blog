@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Scss - variable | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-01-23T04:58:00.000Z" itemprop="datePublished">
+          1月 23 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Scss - variable</h1>
+    <section class="post-content">
+      <p>Scss - variable。<br><a id="more"></a></p>
+<h2 id="variable_type">variable type</h2>
+<h4 id="Boolean">Boolean</h4>
+<pre><code><span class="variable">$rounded</span>: <span class="literal">false</span>;
+<span class="variable">$shadow</span>: <span class="literal">true</span>;
+</code></pre><h4 id="Numbers_(可寫單位)">Numbers (可寫單位)</h4>
+<pre><code><span class="variable">$rounded</span><span class="value">: <span class="number">4px</span>;</span>
+<span class="variable">$line-height</span><span class="value">: <span class="number">1.5</span>;</span>
+<span class="variable">$font-size</span><span class="value">: <span class="number">3rem</span>;</span>
+</code></pre><h4 id="Colors">Colors</h4>
+<pre><code><span class="variable">$base</span><span class="value">: purple;</span>
+<span class="variable">$border</span><span class="value">: <span class="function">rgba</span>(<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>, <span class="number">0.5</span>);</span>
+<span class="variable">$shadow</span><span class="value">: <span class="hexcolor">#333</span>;</span>
+</code></pre><h4 id="Strings">Strings</h4>
+<pre><code><span class="variable">$header</span><span class="value">: <span class="string">'My Head'</span>;</span>
+<span class="variable">$callout</span><span class="value">: Arial;</span>
+<span class="variable">$message</span><span class="value">: <span class="string">"Oops..."</span>;</span>
+</code></pre><h4 id="Lists">Lists</h4>
+<pre><code><span class="variable">$authors</span><span class="value">: Mike, John, Tom;</span>
+<span class="variable">$margin</span><span class="value">: <span class="number">40px</span> <span class="number">0</span> <span class="number">20px</span> <span class="number">100px</span>;</span>
+</code></pre><h4 id="Null">Null</h4>
+<pre><code><span class="variable">$shadow</span>: <span class="keyword">null</span>;
+</code></pre><h2 id="variable_scope">variable scope</h2>
+<p>在 selector 裡頭改變 variable，global variable 也會隨之改變：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">$<span class="tag">color-base</span>: <span class="id">#777777</span>;</div><div class="line"></div><div class="line"><span class="class">.sidebar</span> <span class="rules">{</span></div><div class="line">  <span class="rule">$<span class="attribute">color-base</span>:<span class="value"> <span class="hexcolor">#222222</span></span></span>;</div><div class="line">  <span class="rule"><span class="attribute">background</span>:<span class="value"> $color-base</span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="tag">p</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">color</span>:<span class="value"> $color-base</span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<p>產生：</p>
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class">.sidebar</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">background</span>:<span class="value"> <span class="hexcolor">#222222</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="tag">p</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">color</span>:<span class="value"> <span class="hexcolor">#222222</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<h2 id="#{$variable}">#{$variable}</h2>
+<p>可以用 <code>#{variable}</code> 的方式來將變數套到 selectors, property names, 或是 strings：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$side</span><span class="value">: top;</span></div><div class="line"></div><div class="line"><span class="tag">sup</span> {</div><div class="line">  <span class="attribute">position</span><span class="value">: relative;</span></div><div class="line">  #{<span class="variable">$side</span>}<span class="value">: -<span class="number">0.5em</span>;</span>   <span class="comment">// 變成 top: -0.5em;</span></div><div class="line">}</div><div class="line"><span class="class">.callout-</span>#{<span class="variable">$side</span>} {   <span class="comment">// 變成 .callout-top</span></div><div class="line">  <span class="attribute">background</span><span class="value">: <span class="hexcolor">#777</span>;</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h2 id="!default">!default</h2>
+<p>預設情況下，後來設定的變數會覆蓋掉先前的變數：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$title</span><span class="value">: <span class="string">'First Title'</span>;</span></div><div class="line"><span class="variable">$title</span><span class="value">: <span class="string">'Second Title'</span>;</span></div><div class="line"></div><div class="line"><span class="tag">h2</span><span class="pseudo">:before</span> {</div><div class="line">  <span class="attribute">content</span><span class="value">: <span class="variable">$title</span>;</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>產生：</p>
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">h2</span><span class="pseudo">:before</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">content</span>:<span class="value"> <span class="string">'Second Title'</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<p>但如果在設定變數後面新增 <code>!default</code>，就可以避免覆蓋掉先前的變數：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$title</span><span class="value">: <span class="string">'First Title'</span>;</span></div><div class="line"><span class="variable">$title</span><span class="value">: <span class="string">'Second Title'</span> !default;</span></div><div class="line"></div><div class="line"><span class="tag">h2</span><span class="pseudo">:before</span> {</div><div class="line">  <span class="attribute">content</span><span class="value">: <span class="variable">$title</span>;</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">h2</span><span class="pseudo">:before</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">content</span>:<span class="value"> <span class="string">'First Title'</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/01/23/scss-variable/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/01/23/scss-variable/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/01/23/scss-variable/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/03/07/rails-deploy-ji-chu-jiao-xue/">
+        ← Rails Deploy 基礎教學
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/01/22/scss-ji-ben-guan-nian/">
+        Scss 基本觀念 →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

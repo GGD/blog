@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>scope | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-04T06:14:00.000Z" itemprop="datePublished">
+          12月 4 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">scope</h1>
+    <section class="post-content">
+      <p>scope 筆記。<br><a id="more"></a></p>
+<h2 id="default_scope">default_scope</h2>
+<p>如果每次都要用到相同的 <code>scope</code>，比如說列出某人的文章，而排列方式都是從新到舊，就可以把原本的：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/posts_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@posts</span> = current_user.posts.recent.limit(<span class="number">10</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/post.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Post</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	scope <span class="symbol">:recent</span>, order(<span class="string">'created_at DESC'</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>改為：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/posts_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@posts</span> = current_user.posts.limit(<span class="number">10</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/post.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Post</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	default_scope order(<span class="string">'created_at DESC'</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="unscoped">unscoped</h2>
+<p>如果不想要使用 <code>default_scope</code> 時，在後面硬加上條件是行不通的，這樣仍然會使用 <code>recent</code> 的 scope：<br>    @posts = current_user.posts.order(:status).limit(10)    # 仍然會使用 recent scope<br>解法：加入 <code>unscoped</code> -<br>    @posts = current_user.posts.unscoped.order(:status).limit(10)</p>
+<h2 id="lambda">lambda</h2>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@trending</span> = <span class="constant">Topic</span>.trending.limit(<span class="number">5</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">class</span> Topic &lt; ActiveRecord::Base</div><div class="line">	scope :trending, <span class="keyword">where</span>(<span class="string">'started_trending &gt; ?'</span>, <span class="number">1</span>.day.ago).<span class="keyword">order</span>(<span class="string">'mentions DESC'</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>上述的 <code>scope</code> 只會在第一次執行時有用，後續不管執行幾次，都會得到相同的時間。如下：<br>    第一次執行：where(‘started_trending &gt; ?’, ‘12-04-2012 14:54’)<br>    第二次執行：where(‘started_trending &gt; ?’, ‘12-04-2012 14:54’)<br>因為 Rails 在第一次執行 <code>scope</code> 時，會產生一個 method；然而第二次執行時，就只會執行第一次產生的 method 而已。<br>我們可以使用 <code>lambda</code> 來解決這個問題，這樣每次執行 <code>scope</code> 時，都會再產生新的日期：</p>
+<figure class="highlight"><figcaption><span>/app/model/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Topic</span> &lt; <span class="title">ActiveRecord</span>:</span>:Base</div><div class="line">	scope :trending, <span class="keyword">lambda</span>, { where(<span class="string">'started_trending &gt; ?'</span>, <span class="number">1.</span>day.ago).order(<span class="string">'mentions DESC'</span>) }</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<h3 id="with_params">with params</h3>
+<p><code>lambda</code> 還可以傳入參數：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@trending</span> = <span class="constant">Topic</span>.trending(<span class="number">5</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">class Topic &lt; ActiveRecord::Base</div><div class="line">	scope :trending, lambda, { |<span class="built_in">num</span>| where(<span class="string">'started_trending &gt; ?'</span>, <span class="number">1.</span>day.ago).order(<span class="string">'mentions DESC'</span>).limit(<span class="built_in">num</span>) }</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h3 id="with_default_params">with default params</h3>
+<p>剛剛的例子如果要改成回傳所有的 trend，可以指定 <code>num</code> 為 <code>nil</code>，Rails 會自動忽略 <code>limit</code>：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@trending</span> = <span class="constant">Topic</span>.trending</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/topic.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Topic</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	scope <span class="symbol">:trending</span>, lambda, { |num = <span class="keyword">nil</span>| where(<span class="string">'started_trending &gt; ?'</span>, <span class="number">1</span>.day.ago).order(<span class="string">'mentions DESC'</span>).limit(num) }</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/04/scope/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/04/scope/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/04/scope/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/04/filter/">
+        ← filter
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/03/3bu-zou-zai-heroku-shang-zhi-xing-da-liang-de-rails-app/">
+        3 步驟在 Heroku 上執行稍大型的 Rails app →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

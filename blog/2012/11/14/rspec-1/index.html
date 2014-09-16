@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rspec(1) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-13T23:51:00.000Z" itemprop="datePublished">
+          11月 14 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Rspec(1)</h1>
+    <section class="post-content">
+      <p><a href="http://rspec.info/" target="_blank" rel="external">Rspec</a> 是用來測試的一個套件，這邊簡單筆記一下教學<br><a id="more"></a></p>
+<h3 id="SETUP">SETUP</h3>
+<pre><code><span class="variable">$ </span>gem install rspec
+</code></pre><p>接著在專案目錄底下執行<br>    $ rspec —init<br>        create spec/spec_helper.rb<br>        create .rspec</p>
+<h3 id="DESCRIBE">DESCRIBE</h3>
+<p>假設目前的專案底下有個 <code>lib/zombie.rb</code><br>因此相對應的 spec 會位於 <code>spec/lib/zombie_spec.rb</code><br>在此 spec 底下，首先要先 require <code>spec_helper</code>，當中包含了 spec 的各項設定。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">require</span> <span class="string">"spec_helper"</span></div></pre></td></tr></table></figure><br>接著要敘述 zombie 的行為，因此要寫個 describe block，在 block 裡面則撰寫 zombie 的各種 example（這裡不稱作 test）。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">require</span> <span class="string">"spec_helper"</span></div><div class="line"></div><div class="line">describe <span class="string">"A zombie"</span> <span class="built_in">do</span></div><div class="line">	<span class="comment"># your example (tests) go here</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h3 id="IT">IT</h3>
+<p>我們想要把這隻 zombie 取名為 Ash，可以用 <code>it</code> method 來敘述這個 example。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">require</span> <span class="string">"spec_helper"</span></div><div class="line"></div><div class="line">describe <span class="string">"A zombie"</span> <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">"is named Ash"</span> <span class="comment">#name of the example</span></div><div class="line">	<span class="comment"># examples are declared using the "it" method</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>現在先執行這段 spec：<br>    $ rspec spec/lib/zombie_spec.rb<br>    *<br>    Pending:<br>    Zombie is named “Ash”<br>        # Not yet implemented<br>            # ./spec/lib/zombie_spec.rb:18<br>    Finished in 0.00032 seconds<br>    1 example, 0 failures, 1 pending<br>會發現結果顯示 1 pending，表示這個 <code>it</code> method 待處理。<br><br>### PENDING<br>如果一個 class 有許多 examples 需要測試，而當下又沒辦法立即實作 example 時，就可以用 pending 來表示這個 example 待處理。<br>pending 還有另外幾種寫法：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">it</span> <span class="string">"is named Ash"</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">xit <span class="string">"is named Ash"</span> do</div><div class="line">	<span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">it <span class="string">"is named Ash"</span> do</div><div class="line">	pending</div><div class="line">	<span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>先別管 pending 了，你有沒有聽過 describe 後面通常不會用 string 來敘述，而是改放需要測試的 class 名稱<br>因此再把原本的 spec 改寫為：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">require</span> <span class="string">"spec_helper"</span></div><div class="line"></div><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">"is named Ash"</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>再度執行這段 spec：<br>    $ rspec spec/lib/zombie_spec.rb<br><br>    zombie_spec.rb:17:in <code>&lt;top (required)&gt;&#39;:
+    uninitialized constant Zombie (NameError)
+顯示無法得知 Zombie 是什麼，表示我們還需要給他 Zombie class 來做對應。  
+回到一開始的</code>lib/zombie.rb<code>，需要在裡面加個 Zombie class：
+&lt;hexoescape&gt;7&lt;/hexoescape&gt;
+接著在</code>zombie_spec.rb<code>裡頭 require 這個 class：
+&lt;hexoescape&gt;8&lt;/hexoescape&gt;
+重新執行這個 spec 之後，這個問題就可以解掉，又回到 1 pending 了。
+
+### EXPECTATION
+現在要把</code>it “is named Ash”` 這個 example 補完。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">require</span> <span class="string">"spec_helper"</span></div><div class="line"><span class="built_in">require</span> <span class="string">"zombie"</span></div><div class="line"></div><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">"is named Ash"</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span></div><div class="line">		zombie.name.should == <span class="string">'Ash'</span> <span class="comment"># 這段稱為 expectation</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p><code>如果是用 Rails 內建的 test，那上面那段會是：  
+「assert_euqal &#39;Ash&#39;, zombie.name」  
+這段長得真的很像 zombie 的寫法稱為 assertion，在 Rsepc 的寫法則稱為 expectation  
+（但作用都相同）</code>  </p>
+<p>執行 spec 之後，會出現錯誤：<br>    $ rspec spec/lib/zombie_spec.rb</p>
+<pre><code><span class="number">1</span>) <span class="type">Zombie</span> <span class="keyword">is</span> named <span class="string">"Ash"</span>
+            <span class="type">Failure</span>/<span class="type">Error</span>: zombie.name.should == '<span class="type">Ash</span>'
+            <span class="type">NoMethodError</span>:
+                undefined <span class="keyword">method</span> 'name' <span class="keyword">for</span> <span class="comment">#&lt;Zombie&gt;</span>
+
+<span class="type">Finished</span> <span class="keyword">in</span> <span class="number">0</span>.<span class="number">00231</span> seconds
+<span class="number">1</span> example, <span class="number">1</span> failure
+</code></pre><p>這時候就要再回到 <code>lib/zombie.rb</code> 把 <code>name</code> 實作出來：</p>
+<figure class="highlight"><figcaption><span>lib/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span></span></div><div class="line">	attr_acessor <span class="symbol">:name</span></div><div class="line">	</div><div class="line">	<span class="function"><span class="keyword">def</span> </span>initialize</div><div class="line">		<span class="variable">@name</span> = <span class="string">'Ash'</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>再度執行 spec，這次終於通過了！<br>    $ rspec spec/lib/zombie_spec.rb<br>    .    # 此點表示通過</p>
+<pre><code>Finished <span class="operator">in</span> <span class="number">0.00081</span> <span class="built_in">seconds</span>
+<span class="number">1</span> example, <span class="number">0</span> failures
+</code></pre><h4 id="Another_expectation">Another expectation</h4>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">require</span> <span class="string">"spec_helper"</span></div><div class="line"><span class="keyword">require</span> <span class="string">"zombie"</span></div><div class="line"></div><div class="line">describe Zombie do</div><div class="line">	<span class="keyword">...</span></div><div class="line">	it <span class="string">"has no brains"</span> do</div><div class="line">		zombie = Zombie.new</div><div class="line">		zombie.brains.should &lt; <span class="number">1</span></div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure><br>同樣地，<code>lib/zombie.rb</code> 也要有 <code>brain</code> 來對應：<br><figure class="highlight"><figcaption><span>lib/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span></span></div><div class="line">	attr_acessor <span class="symbol">:name</span>, <span class="symbol">:brain</span></div><div class="line">	</div><div class="line">	<span class="function"><span class="keyword">def</span> </span>initialize</div><div class="line">		<span class="variable">@name</span> = <span class="string">'Ash'</span></div><div class="line">		<span class="variable">@brain</span> = <span class="number">0</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>執行 spec 後…pass！<br>    $ rspec spec/lib/zombie_spec.rb<br>    ..</p>
+<pre><code>Finished <span class="operator">in</span> <span class="number">0.00083</span> <span class="built_in">seconds</span>
+<span class="number">2</span> example, <span class="number">0</span> failures
+</code></pre><p>此例當中，<code>should</code> 稱為 modifier，<code>&lt;</code> 稱為 matcher。<br>modifier 和 matcher 可以有多種寫法，也可以自己寫一套。下述幾種都算常見：<br>    zombie.name.should == ‘Ash<br>    zombie.alive.should == false # 可寫成：zombie.alive.should be_false（<code>be</code> 是 matcher）<br>    zombie.rotting.should == true # 可寫成：zombie.rotting.should be_true<br>    zombie.height.should &gt;= 5<br>    zombie.brain.should be &lt; 1<br>    zombie.height.should_not == 5</p>
+<h4 id="測試判斷式(predicate)">測試判斷式(predicate)</h4>
+<figure class="highlight"><figcaption><span>lib/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span></span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>hungry?	<span class="comment"># predicate</span></div><div class="line">		<span class="keyword">true</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>如果要測試 Rails 當中的判斷式 <code>hungry?</code>，spec 可以寫成：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">"is hungry"</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span></div><div class="line">		zombie.hungry?.should == <span class="constant">true</span>	<span class="comment"># 巴豆夭</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>上述的巴豆夭可以改寫成：<br>    zombie.hungry?.should be_true<br>而針對判斷式，spec 的寫法可以更 human：<br>    zombie.should be_hungry</p>
+<p>這段 spec 執行後也可以 pass。  </p>
+<p>source: <a href="http://www.codeschool.com/" target="_blank" rel="external">Code School</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/14/rspec-1/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/14/rspec-1/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/14/rspec-1/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/15/rspec-2/">
+        ← Rspec(2)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/12/symbol-number-to-proc/">
+        Symbol#to_proc →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

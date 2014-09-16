@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Pry | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-09-19T02:45:00.000Z" itemprop="datePublished">
+          9月 19 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Pry</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/pry/pry" target="_blank" rel="external">Pry</a> 是 IRB 的另一個選擇，同時也可在程式碼當中加入中斷點，做為 debug 的工具。<br><a id="more"></a></p>
+<p>以下將簡單介紹 Pry 的用法，以及如何配合 Rails 使用。  </p>
+<p>Pry 可用 gem 的方式來安裝，這邊同時再安裝 <code>pry-doc</code> gem：<br>    $ gem install pry pry-doc</p>
+<p>接著就可以輸入 <code>pry</code> 來執行 Ruby 程式碼，就像 <code>irb</code> 一樣：<br>    $pry<br>    pry(main)&gt; 1 + 2<br>    =&gt; 3</p>
+<p>在專案裡面跑 <code>rails c</code> ，就會啟動 IRB；而如果要啟動 Pry 並載入專案裡的 models 的話，要在執行 <code>pry</code> 時就傳入專案的 environment 檔。<br>    $ pry -r ./config/environment<br>    pry(main)&gt; Article.count<br>    =&gt; 3<br>執行 <code>help</code> 會列出各項 Pry 的功能，其中最常使用的是 <code>cd</code> 和 <code>ls</code>。<br><code>cd</code> 可以改變目前的 scope，比如說要移到 <code>Article</code> class，就輸入 <code>cd Article</code>，再輸入 <code>self</code> 就可以檢視目前的 scope。<br>    pry(main)&gt; cd Article<br>    pry(#<class:0x1022f60e0>):1&gt; self<br>    =&gt; Article(id: integer, name: string, content: text, created_at: datetime, updated_at: datetime, published_at: datetime)<br>既然現在是在 <code>Article</code> class 底下，當然也可以執行該 class 的 method：比如 <code>first</code> 就會回傳第一個 article，其功用就跟 <code>Article.first</code> 一樣。<br>    pry(#<class:0x1022f60e0>):1&gt; first<br>    =&gt; #<article id:="" 1,="" name:="" "what="" is="" music",="" content:="" "music="" an="" art="" form="" in="" which="" the="" medium="" sound="" o...",="" created_at:="" "2011-08-24="" 20:35:29",="" updated_at:="" 20:37:22",="" published_at:="" "2011-05-13="" 23:00:00"=""><br>此外，還可以 <code>cd</code> 到任何的 object。所以在 <code>Article</code> scope 裡執行 <code>cd first</code>，就會跳到第一個 article，並且可以使用該 object 的 method 與查看 properties。<br>    pry(#<class:0x1022f60e0>):1&gt; cd first<br>    pry(#<article:0x102300c98>):2&gt; name<br>    =&gt; “What is Music”<br>甚至還可以 <code>cd</code> 到 article 的 <code>name</code>，並且使用 那個 string 的 method。<br>    pry(#<article:0x102300c98>):2&gt; cd name<br>    pry(“What is Music”):3&gt; upcase<br>    =&gt; “WHAT IS MUSIC”<br>Pry 有個 <code>nesting</code> 功能，可以列出剛剛 <code>cd</code> 的過程：<br>    pry(“What is Music”):3&gt; nesting</article:0x102300c98></article:0x102300c98></class:0x1022f60e0></article></class:0x1022f60e0></class:0x1022f60e0></p>
+<pre><code><span class="header">Nesting status:
+--</span>
+0. main (Pry top level)
+1. #&lt;Class:0x1022f60e0&gt;
+2. #&lt;Article:0x102300c98&gt;
+3. "What is Music"
+</code></pre><p>上面列出了剛剛所 <code>cd</code> 的 object，輸入 <code>exit</code> 可以跳到上一個 object，比如這邊連續輸入兩次，就會跳到 <code>Atricle</code> class。  </p>
+<p>Pry 另一個常用的功能 <code>ls</code> 則會列出 object 的 variables 與 methods，預設為列出目前 scope 的所有 variables。<br>如果在 <code>Article</code> class 下執行 <code>ls</code>：<br>    pry(#<class:0x1022f60e0>):1&gt; ls<br>    [:<em>, :_pry</em>, :inp, :out, :@_create_callbacks, :@_defined_class_methods, :@_save_callbacks, :@_update_callbacks, :@_validate_callbacks, :@arel_engine, :@arel_table, :@attribute_methods_generated, :@cached_attributes, :@column_names, :@columns, :@columns_hash, :@finder_needs_type_condition, :@generated_attribute_methods, :@inheritable_attributes, :@inheritance_column, :@parent_name, :@quoted_primary_key, :@quoted_table_name, :@relation]<br>某些 Pry 指令還支援 flags，可以在指令的後面加上 <code>-h</code> 來查看，比如輸入 <code>ls -h</code> 後，可知 <code>-m</code> 可以顯示該 class 的 methods，<code>-M</code> 可以顯示 instance methods。  </class:0x1022f60e0></p>
+<p>Pry 另一個有用的指令是 <code>show-doc</code>。假設想知道 <code>Array</code> class 的 <code>in_groups_of</code> method，可以輸入 <code>show-doc Array#in_groups_of</code> 來查看。<br>    pry(#<class:0x1022f60e0>):1&gt; show-doc Array#in_groups_of</class:0x1022f60e0></p>
+<pre><code><span class="keyword">From</span>: <span class="regexp">/Users/</span>eifion<span class="regexp">/.rvm/g</span>ems<span class="regexp">/ruby-1.9.2-p290/g</span>ems<span class="regexp">/activesupport-3.0.10/</span>lib<span class="regexp">/active_support/</span>core_ext<span class="regexp">/array/g</span>rouping.rb @ line <span class="number">19</span>:
+Number of lines: <span class="number">15</span>
+
+signature: in_groups_of(number, fill_with=?)
+
+Splits or iterates over the array in groups of <span class="keyword">size</span> number,
+padding <span class="keyword">any</span> remaining slots with fill_with unless it is <span class="keyword">false</span>.
+
+%w(<span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span>).in_groups_of(<span class="number">3</span>) {|<span class="keyword">group</span>| p <span class="keyword">group</span>}
+[<span class="string">"1"</span>, <span class="string">"2"</span>, <span class="string">"3"</span>]
+[<span class="string">"4"</span>, <span class="string">"5"</span>, <span class="string">"6"</span>]
+[<span class="string">"7"</span>, nil, nil]
+
+%w(<span class="number">1</span> <span class="number">2</span> <span class="number">3</span>).in_groups_of(<span class="number">2</span>, <span class="string">'&amp;nbsp;'</span>) {|<span class="keyword">group</span>| p <span class="keyword">group</span>}
+[<span class="string">"1"</span>, <span class="string">"2"</span>]
+[<span class="string">"3"</span>, <span class="string">"&amp;nbsp;"</span>]
+
+%w(<span class="number">1</span> <span class="number">2</span> <span class="number">3</span>).in_groups_of(<span class="number">2</span>, <span class="keyword">false</span>) {|<span class="keyword">group</span>| p <span class="keyword">group</span>}
+[<span class="string">"1"</span>, <span class="string">"2"</span>]
+[<span class="string">"3"</span>]
+</code></pre><p>也可以直接對 object 呼叫 <code>show-doc</code>，比如在目前的 <code>Article</code> class 可以呼叫 <code>all</code> 來得到 articles 陣列，執行 <code>show-doc all.in_groups_of</code> 就可以得到跟上面相同的文件。  </p>
+<p>另一個有用的功能是 <code>show-method</code>，可以顯示任何 method 的 source code。以下就是針對 <code>in_groups_of</code> 執行 <code>show-method</code>：<br>    pry(#<class:0x104e63de0>):1&gt; show-method all.in_groups_of<br>    From: /Users/eifion/.rvm/gems/ruby-1.9.2-p290/gems/activesupport-3.0.10/lib/active_support/core_ext/array/grouping.rb @ line 19:<br>    Number of lines: 19</class:0x104e63de0></p>
+<pre><code>def in_groups_of(<span class="built_in">number</span>, fill_with = nil)
+    <span class="keyword">if</span> fill_with == <span class="constant">false</span>
+      collection = self
+    <span class="keyword">else</span>
+      <span class="comment"># size % number gives how many extra we have;</span>
+      <span class="comment"># subtracting from number gives how many to add;</span>
+      <span class="comment"># modulo number ensures we don't add group of just fill.</span>
+      padding = (<span class="built_in">number</span> - size % <span class="built_in">number</span>) % <span class="built_in">number</span>
+      collection = dup.concat([fill_with] * padding)
+    <span class="function"><span class="keyword">end</span></span>
+
+    <span class="keyword">if</span> block_given?
+      collection.each_slice(<span class="built_in">number</span>) { |slice| yield(slice) }
+    <span class="keyword">else</span>
+      groups = []
+      collection.each_slice(<span class="built_in">number</span>) { |group| groups &lt;&lt; group }
+      groups
+    <span class="function"><span class="keyword">end</span></span>
+<span class="function"><span class="keyword">end</span></span>
+</code></pre><p>跟 <code>show-method</code> 相似的功能還有 <code>edit-method</code>，對 method 執行此功能時，會自動打開編輯器並且跳到該行程式碼！  </p>
+<p>在 Pry 裡面也可以執行 shell commands，比如說要執行 <code>ls</code> shell commands 時，可以輸入 <code>.ls</code> 來達成。</p>
+<h3 id="用_Pry_來_debug">用 Pry 來 debug</h3>
+<p>在底下的 <code>word_count</code> 當中有 bug，因此無論 <code>content</code> 字數有多少，都會一直回傳 0。此時可以用 <code>cd</code> 跳到 <code>Article</code>，再執行 <code>edit-method word_count</code> 就會跳到底下的 method：</p>
+<figure class="highlight"><figcaption><span>/app/models/article.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Article</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  attr_accessible <span class="symbol">:name</span>, <span class="symbol">:content</span>, <span class="symbol">:published_at</span></div><div class="line">  has_many <span class="symbol">:comments</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>word_count</div><div class="line">    words = content.scan(<span class="regexp">/\\w+/</span>)</div><div class="line">    words.size</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD<br>此時可以在這段程式碼當中加入 <code>binding.pry</code> 做為中斷點。如果加在 <code>words.size</code> 的前一行，那麼在呼叫 <code>word_count</code> method 的時候，程式就會停在 <code>biding.pry</code>，此時可以回到 Pry 查看。</p>
+<pre><code>&gt; word_count
+
+<span class="constant">From</span><span class="symbol">:</span> /<span class="constant">Users</span>/eifion/blog/app/models/article.rb @ line <span class="number">7</span> <span class="keyword">in</span> <span class="constant">Article</span><span class="comment">#word_count:</span>
+
+     <span class="number">2</span><span class="symbol">:</span>   attr_accessible <span class="symbol">:name</span>, <span class="symbol">:content</span>, <span class="symbol">:published_at</span>
+     <span class="number">3</span><span class="symbol">:</span>   has_many <span class="symbol">:comments</span>
+     <span class="number">4</span><span class="symbol">:</span>
+     <span class="number">5</span><span class="symbol">:</span>   <span class="function"><span class="keyword">def</span> </span>word_count
+     <span class="number">6</span><span class="symbol">:</span>     words = content.scan(<span class="regexp">/\\w+/</span>)
+<span class="output"><span class="status"> =&gt;</span>  <span class="number">7</span><span class="symbol">:</span>     binding.pry</span>
+     <span class="number">8</span><span class="symbol">:</span>     words.size
+     <span class="number">9</span><span class="symbol">:</span>   <span class="keyword">end</span>
+    <span class="number">10</span><span class="symbol">:</span> <span class="keyword">end</span>
+</code></pre><p>此時已經存取了所有的 local variables，因此可以呼叫 <code>words</code> 來查看 <code>words</code> array 的內容：<br>    pry(#<article:0x1008c3f38>):3&gt; words<br>    =&gt; []<br>此 array 不應該是空的，因此可以推斷 regular expression 出了問題。可以再次用 <code>edit-method word_count</code> 跳到該行程式碼並加以修復，同時移除 <code>binding.pry</code>。</article:0x1008c3f38></p>
+<p><figure class="highlight"><figcaption><span>/app/models/article.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Article</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  attr_accessible <span class="symbol">:name</span>, <span class="symbol">:content</span>, <span class="symbol">:published_at</span></div><div class="line">  has_many <span class="symbol">:comments</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>word_count</div><div class="line">    words = content.scan(<span class="regexp">/\w+/</span>)</div><div class="line">    words.size</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>再次呼叫 <code>word_count</code> 就可以得到正確的結果了。<br>    pry(#<article:0x1008c3f38>):3&gt; word_count<br>    =&gt; 55</article:0x1008c3f38></p>
+<p>如果想對 controller 或 view 來進行 debug，那可以在 <code>Gemfile</code> 當中加入 Pry。</p>
+<p><figure class="highlight"><figcaption><span>Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">source <span class="string">'http://rubygems.org'</span></div><div class="line"></div><div class="line">gem <span class="string">'rails'</span>, <span class="string">'3.0.10'</span></div><div class="line">gem <span class="string">'sqlite3'</span></div><div class="line">gem <span class="string">'nifty-generators'</span></div><div class="line">gem <span class="string">'pry'</span>, <span class="symbol">:group</span> =&gt; <span class="symbol">:development</span></div></pre></td></tr></table></figure><br>執行 <code>bundle</code> 安裝然後執行 <code>rails s</code> 啓動 server 後，就可以使用 <code>binding.pry</code> 當作中斷點了。</p>
+<p><figure class="highlight"><figcaption><span>/app/controllers/articles_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@articles</span> = <span class="constant">Article</span>.all</div><div class="line">  binding.pry</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>若在瀏覽器當中開啓此頁，會看到網頁讀到一半就 “stick” 在那邊，整個網頁是執行到中斷點的地方，此時就可以用 Pry 來進行 debug。若要將其恢復，則可以輸入 <code>exit-all</code>，這次的 request 就會接著跑完。<br>更詳細的資料可以參考 Pry 的 <a href="https://github.com/pry/pry/wiki" target="_blank" rel="external">wiki</a>，或是 Joshua Cheek 的 <a href="http://vimeo.com/26391171" target="_blank" rel="external">screencast</a>。  </p>
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/09/19/pry/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/09/19/pry/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/09/19/pry/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/09/26/include-vs-joins/">
+        ← Include vs Joins
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/08/30/strong-parameters/">
+        Strong Parameters →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

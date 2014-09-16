@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>helper | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-22T09:18:00.000Z" itemprop="datePublished">
+          11月 22 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">helper</h1>
+    <section class="post-content">
+      <p>Helper 筆記。<br><a id="more"></a></p>
+<h3 id="truncate">truncate</h3>
+<p>第 n 個字元以後就用 “…” 取代<br>    &lt;%= truncate(“I need brains!”, length: 10) %&gt;<br>產生 <code>I need bra...</code></p>
+<h4 id="第_n_個字元如果不是完整的字，就用_“…”_取代">第 n 個字元如果不是完整的字，就用 “…” 取代</h4>
+<pre><code>&lt;<span class="variable">%=</span> truncate(<span class="string">"I need brains!"</span>, length: <span class="number">10</span>, <span class="keyword">separator</span>: <span class="string">' '</span>) <span class="variable">%&gt;</span>
+</code></pre><p>產生 <code>I need...</code></p>
+<h3 id="pluralize">pluralize</h3>
+<p>把單字轉換單複數<br>    I see &lt;%= pluralize(Zombie.count, “zombie”) %&gt;<br>with 1 =&gt; <code>I see zombie</code><br>with 2 =&gt; <code>I see zombies</code></p>
+<h3 id="titleize">titleize</h3>
+<p>把字首改為大寫<br>    &lt;%= His name was &lt;%= @zombie.name.titleize %&gt;<br>=&gt; <code>His name was Ash Williams</code></p>
+<h3 id="to_sentence">to_sentence</h3>
+<p>把 array 轉為句子的結構<br>    Ash’s zombie roles are &lt;%= @role_names.to_sentence %&gt;<br>=&gt; `Ash’s zombie roles are Captain, Soldier, and Brain Taster</p>
+<h3 id="time_ago_in_words">time_ago_in_words</h3>
+<pre><code>He was buried alive &lt;<span class="variable">%=</span> time_ago_in_words <span class="variable">@zombie</span>.created_at <span class="variable">%&gt;</span> ago
+</code></pre><p>=&gt; `He was buried alive 2 days ago</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/22/helper/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/22/helper/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/22/helper/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/26/ajax/">
+        ← AJAX
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/21/route/">
+        Route →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

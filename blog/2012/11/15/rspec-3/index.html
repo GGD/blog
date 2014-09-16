@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rspec(3) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-15T12:28:00.000Z" itemprop="datePublished">
+          11月 15 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Rspec(3)</h1>
+    <section class="post-content">
+      <p><a href="http://rspec.info/" target="_blank" rel="external">Rspec</a> 是用來測試的一個套件，這邊簡單筆記一下教學<br><a id="more"></a></p>
+<h3 id="Implicit_Subject">Implicit Subject</h3>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'responds to name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span></div><div class="line">		zombie.should respond_to(:name)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>為了要使 Rspec 更加 DRY 且更 human，上述的 spec 可以改寫為：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'responds to name'</span> <span class="built_in">do</span></div><div class="line">		subject.should respond_to(:name)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>這裡的 <code>subject</code> 會與 describe block 所用的 class 相呼應，產生該 class 的 instance。也就是<br>    subject = Zombie.new<br>因此 example 裡出現的 <code>subject</code> 就是指 new 一個 Zombie。<br>此外，<code>subject</code> 只有在 describe 後面接 class 時才會起作用。<br><br>### Implicit Receiver<br>上述其實還可以更精簡，由於預設會使用 <code>subject</code>，因此甚至可以把 <code>subject</code> 完全拿掉：<br><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'responds to name'</span> <span class="built_in">do</span></div><div class="line">		should respond_to(:name)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>或乾脆把 <code>do...end</code> block 拿掉，改用大括弧以一行顯示：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'responds to name'</span> { should respond_to(:name) }</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>雖然已經精簡成一行了，但一行之中卻有重複的字眼。為了更加簡化，可以再改寫為：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> should respond_to(:name)</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>即使精簡成這樣，在執行 Rspec 的時候，依然可以 pass。Rspec 會自動產生 example name：<br>    $ rspec spec/models/zombie_spec.rb</p>
+<pre><code>Zombie
+    should respond <span class="built_in">to</span> <span class="comment">#name</span>
+Finished <span class="operator">in</span> <span class="number">0.00102</span> <span class="built_in">seconds</span>
+<span class="number">1</span> examples, <span class="number">0</span> failures
+</code></pre><h3 id="its">its</h3>
+<p>接下來看看另個例子：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> {subject.name.should == <span class="string">'Ash'</span>}</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>在遇到呼叫 subject 的 method 這種狀況時，就可以使用 <code>its</code>：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">describe <span class="constant">Zombie</span> <span class="keyword">do</span></div><div class="line">	its(<span class="symbol">:name</span>) { should == <span class="string">'Ash'</span> }</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>上述等同於呼叫 Zombie instance 的 <code>name</code> method，並且應該為 Ash。<br>在執行 Rspec 時，會顯示：<br>    $ rspec spec/models/zombie_spec.rb</p>
+<pre><code>Zombie
+    <span class="variable">should =</span>= <span class="string">"Ash"</span>
+Finished <span class="keyword">in</span> <span class="number">0.0093</span> seconds
+<span class="number">1</span> examples, <span class="number">0</span> failures
+</code></pre><p>底下這些 example 都是用 <code>its</code> 來敘述：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe <span class="constant">Zombie</span> <span class="keyword">do</span></div><div class="line">	its(<span class="symbol">:name</span>) { should == <span class="string">'Ash'</span> }</div><div class="line">	its(<span class="symbol">:weapon</span>) { should <span class="keyword">include</span>(weapon) }</div><div class="line">	its(<span class="symbol">:brain</span>) { should be_nil }</div><div class="line">	its(<span class="string">'tweet.size'</span>) { should == <span class="number">2</span> }		<span class="comment"># 雖然是 string，但會轉為數值來做測試</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h3 id="Nesting_examples">Nesting examples</h3>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'craves brains when hungry'</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'with a veggie preference still craves brains when hungry'</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'with a veggie preference prefers vegan brains when hungry'</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>上述的例子可以發現有兩個 examples 重複著 veggie preference ，因此可以用一個 describe block 包起來：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'craves brains when hungry'</span></div><div class="line">	describe <span class="string">'with a veggie preference'</span> <span class="built_in">do</span></div><div class="line">		<span class="keyword">it</span> <span class="string">'still craves brains when hungry'</span></div><div class="line">		<span class="keyword">it</span> <span class="string">'prefers vegan brains when hungry'</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>即使如此，會發現 examples 仍然重複著 with hungry，因此再用一個 describe block 包起來：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	describe <span class="string">'when hungry'</span> <span class="built_in">do</span></div><div class="line">		<span class="keyword">it</span> <span class="string">'craves brains'</span></div><div class="line">		describe <span class="string">'with a veggie preference'</span> <span class="built_in">do</span></div><div class="line">			<span class="keyword">it</span> <span class="string">'still craves brains'</span></div><div class="line">			<span class="keyword">it</span> <span class="string">'prefers vegan brains'</span></div><div class="line">		<span class="function"><span class="keyword">end</span></span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h3 id="Context">Context</h3>
+<p>上述的 <code>describe</code> 可以用 <code>context</code> 來替代，這樣一來就能增加可讀性，可視為在 <code>when hungry</code> 的情境下會…。</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	context <span class="string">'when hungry'</span> <span class="built_in">do</span></div><div class="line">		<span class="keyword">it</span> <span class="string">'craves brains'</span></div><div class="line">		context <span class="string">'with a veggie preference'</span> <span class="built_in">do</span></div><div class="line">			<span class="keyword">it</span> <span class="string">'still craves brains'</span></div><div class="line">			<span class="keyword">it</span> <span class="string">'prefers vegan brains'</span></div><div class="line">		<span class="function"><span class="keyword">end</span></span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h3 id="Subject_in_Context">Subject in Context</h3>
+<p>有時候在不同的情境(context)下，想使用不同狀態的 subject，比如在 with a veggie preference 的情境下，想使用素食主義的 zombie 來測試是否 craves vegan brains，可以寫成：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">...</span></div><div class="line">context <span class="string">'with a veggie preference'</span> do</div><div class="line">	subject { Zombie.new(vegetarian: true) }</div><div class="line"></div><div class="line">	it <span class="string">'craves vegan brains'</span> do</div><div class="line">		craving.should == <span class="string">'vegan brains'</span></div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>既然用到了該 class 的 method，就剛好符合 <code>its</code> 的條件，所以也可以寫成：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">...</span></div><div class="line">context <span class="string">'with a veggie preference'</span> do</div><div class="line">	subject { Zombie.new(vegetarian: true) }</div><div class="line"></div><div class="line">	its(:craving) { should == <span class="string">'vegan brains'</span>}</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<h3 id="Using_subject">Using subject</h3>
+<p>有時候一個 example 會需要不同的 objects，但是一個 example 裡頭只能有一個 <code>subject</code> ，無法代表不同的 instance 時，這時候就可以使用 <code>let</code> 關鍵字。<br>比如說現在有個素食主義的 zombie，此外還有個 axe 武器，並且想同時針對這兩個東西做測試，就可以寫成：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">context <span class="string">'with a veggie preference'</span> <span class="built_in">do</span></div><div class="line">	subject { Zombie.<span class="built_in">new</span>(vegetarian: <span class="constant">true</span>, weapons: [axe]) }</div><div class="line">	let(「:axe」) { Weapon.<span class="built_in">new</span>(name: <span class="string">'axe'</span>) }	<span class="comment"># let axe be an instance of Weapon with following attributes</span></div><div class="line">	</div><div class="line">	its(:weapon) { should <span class="built_in">include</span>(「axe」) }		<span class="comment"># 「axe」對應上面的「:axe」</span></div><div class="line"></div><div class="line">	<span class="keyword">it</span> <span class="string">'can use its axe'</span> <span class="built_in">do</span></div><div class="line">		subject.swing(axe).should == <span class="constant">true</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h3 id="Naming_the_subject">Naming the subject</h3>
+<p>上述例子中，<code>axe</code> variable 指的是武器， <code>subject</code> 指的都是 zombie。<br>但如果測試的程式碼一多，往往會造成現在這個 <code>subject</code> 指的不知道是什麼，這個窘境也可以用 <code>let</code> 解決：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">context <span class="string">'with a veggie preference'</span> <span class="built_in">do</span></div><div class="line">	let(:zombie) { Zombie.<span class="built_in">new</span>(vegetarian: <span class="constant">true</span>, weapons: [axe]) }</div><div class="line">	let(:axe) { Weapon.<span class="built_in">new</span>(name: <span class="string">'axe'</span>) }</div><div class="line">	subject { zombie }	<span class="comment"># 指的是 let(:zombie) 這個 zombie instance</span></div><div class="line">	</div><div class="line">	its(:weapon) { should <span class="built_in">include</span>(axe) }</div><div class="line"></div><div class="line">	<span class="keyword">it</span> <span class="string">'can use its axe'</span> <span class="built_in">do</span></div><div class="line">		zombie.swing(axe).should == <span class="constant">true</span>	<span class="comment"># 由於已經 subject { zombie }，因此這邊就可以直接把 zombie 拿來用</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>上述的 <code>subject { zombie }</code> 可視為 subject alias to zombie。這樣一來，就可以使用有意義的變數，而不是過度使用 <code>subject</code> 了。<br><br>#### 新的寫法<br>新版的 Rspec 已經將上面那段改為更好懂的寫法，原本的：<br><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">context <span class="string">'with a veggie preference'</span> do</div><div class="line">	let(:zombie) { Zombie.new(vegetarian: true, weapons: [axe]) }</div><div class="line">	let(:axe) { Weapon.new(name: <span class="string">'axe'</span>) }</div><div class="line">	subject { zombie }	<span class="comment"># 指的是 let(:zombie)</span></div><div class="line">	<span class="keyword">...</span>	</div><div class="line"></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>可以改寫成：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">context <span class="string">'with a veggie preference'</span> do</div><div class="line">	subject(:zombie) { Zombie.new(vegetarian: true, weapons: [axe]) }</div><div class="line">	let(:axe) { Weapon.new(name: <span class="string">'axe'</span>) }</div><div class="line">	<span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<h3 id="step_by_step_subject">step by step subject</h3>
+<p>如果有一段測試是：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">describe Zombie do</div><div class="line">	let(:zombie) { Zombie.create }	<span class="comment"># 1</span></div><div class="line"></div><div class="line">	subject { zombie }				<span class="comment"># 2</span></div><div class="line"></div><div class="line">	its(:name) { should be_nil? }	<span class="comment"># 3</span></div><div class="line"></div><div class="line">	<span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>當 Rspec 執行到 <code>name</code> should be nil 這個 example 的時候，會往回找看預設的 <code>subject</code> 是什麼，然後 <code>subject</code> 又會往回找看 zombie 是什麼，接著 <code>let</code> 才會開始執行，順序為 #3 -&gt; #2 -&gt; #1。也就是說，Rspec 是以 lazy evaluation 的方式來執行的。  </p>
+<h4 id="let!">let!</h4>
+<p>基於 lazy evaluation 原因，<code>it &quot;creates a zombie&quot; { Zombie.count == 1 }</code> 這段測試是無法 pass 的，因為他並沒有產生 Zombie 的 instance。<br>但如果基於某些原因，想要讓這類 example 每次都去執行 <code>let</code> 來 create 一個 Zombie instance 時，可以把 <code>let</code> 改用 <code>let!</code>。</p>
+<h3 id="Refactor">Refactor</h3>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'has no name'</span> <span class="built_in">do</span></div><div class="line">		@zombie = Zombie.<span class="built_in">create</span></div><div class="line">		@zombie.name.should be_nil?</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"></div><div class="line">	<span class="keyword">it</span> <span class="string">'craves brains'</span> <span class="built_in">do</span></div><div class="line">		@zombie = Zombie.<span class="built_in">create</span></div><div class="line">		@zombie.should be_craving_brains</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"></div><div class="line">	<span class="keyword">it</span> <span class="string">'should not be hungry after eating brains'</span> <span class="built_in">do</span></div><div class="line">		@zombie = Zombie.<span class="built_in">create</span></div><div class="line">		@zombie.hungry.should be_true</div><div class="line">		@zombie.eat(:brains)</div><div class="line">		@zombie.hungry.should be_false</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>可以簡化為：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	let(:zombie) { Zombie.<span class="built_in">create</span> }</div><div class="line">	subject { zombie }</div><div class="line"></div><div class="line">	its(:name) { should be_nil? }</div><div class="line"></div><div class="line">	<span class="keyword">it</span> { should be_craving_brains }</div><div class="line"></div><div class="line">	<span class="keyword">it</span> <span class="string">'should not be hungry after eating brains'</span> <span class="built_in">do</span></div><div class="line">		expect { zombie.eat(:brains) }.<span class="built_in">to</span> change {</div><div class="line">			zombie.hungry</div><div class="line">		}.<span class="built_in">from</span>(<span class="constant">true</span>).<span class="built_in">to</span>(<span class="constant">false</span>)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://www.codeschool.com/" target="_blank" rel="external">Code School</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/15/rspec-3/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/15/rspec-3/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/15/rspec-3/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/16/rspec-4/">
+        ← Rspec(4)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/15/rspec-2/">
+        Rspec(2) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

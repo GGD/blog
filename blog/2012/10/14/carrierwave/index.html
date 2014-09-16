@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>CarrierWave | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-10-14T14:02:00.000Z" itemprop="datePublished">
+          10月 14 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">CarrierWave</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/jnicklas/carrierwave" target="_blank" rel="external">CarrierWave</a> 是一套方便的檔案上傳套件。<br><a id="more"></a></p>
+<h3 id="安裝">安裝</h3>
+<pre><code><span class="title">gem</span> <span class="string">'carrierwave'</span>
+</code></pre><p>執行 <code>bundle</code> 後，接著要用 CarrierWave 所提供的 <code>uploader</code> generator 來產生一個 uploader class，這邊以 <code>image</code> 為例：<br>    $ rails g uploader image<br>      create  app/uploaders/image_uploader.rb<br>這個檔案裡頭有許多的註解，例如上傳位置、上傳圖片之後該如何呈現等。<br>假設現在有個 <code>Painting</code> model，針對此 model 新增一個 column：<br>    $ rails g migration add_image_to_paintings image:string<br>接著跑 <code>rake db:migrate</code><br><code>Painting</code> model 裡面也要做調整：</p>
+<figure class="highlight"><figcaption><span>/app/models/painting.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Painting</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  attr_accessible <span class="symbol">:gallery_id</span>, <span class="symbol">:name</span>, <span class="symbol">:image</span></div><div class="line">  belongs_to <span class="symbol">:gallery</span></div><div class="line">  mount_uploader <span class="symbol">:image</span>, <span class="constant">ImageUploader</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>為了讓檔案可以上傳，在 view 的 <code>form_for</code> 當中也要加上 <code>:html</code> 選項：<br><figure class="highlight"><figcaption><span>/app/views/paintings/_form.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;%= form_for @painting, :html =&gt; {:multipart =&gt; <span class="literal">true</span>} <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.error_messages %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.hidden_field :gallery_id %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :name %&gt;</span><span class="tag">&lt;<span class="title">br</span> /&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :name %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.file_field :image %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span><span class="vbscript">&lt;%= f.submit %&gt;</span><span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<h3 id="檢視上傳的圖片">檢視上傳的圖片</h3>
+<p>假設這個 <code>Painting</code> belongs to <code>Gallery</code>，而為了在 <code>Gallery</code> 的 show 當中可以看到上傳的圖片，因此加上 <code>image_url</code>，其中最後的 <code>to_s</code> 是為了避免沒有圖片時，會回傳 <code>nil</code> 而發生錯誤。</p>
+<figure class="highlight"><figcaption><span>/app/views/show.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="keyword">div</span> id=<span class="string">"paintings"</span>&gt;</div><div class="line">  &lt;% @gallery.paintings.each <span class="keyword">do</span> |painting| %&gt;</div><div class="line">    &lt;<span class="keyword">div</span> class=<span class="string">"painting"</span>&gt;</div><div class="line">      &lt;%= image_tag painting.image_url.to_s %&gt;</div><div class="line">      &lt;<span class="keyword">div</span> class=<span class="string">"name"</span>&gt;&lt;%= painting.name %&gt;&lt;/<span class="keyword">div</span>&gt;</div><div class="line">      &lt;<span class="keyword">div</span> class=<span class="string">"actions"</span>&gt;</div><div class="line">        &lt;%= link_to <span class="string">"edit"</span>, edit_painting_path(painting) %&gt; |</div><div class="line">        &lt;%= link_to <span class="string">"remove"</span>, painting, :confirm =&gt; '<span class="type">Are</span> you sure?', :<span class="keyword">method</span> =&gt; :delete %&gt;</div><div class="line">      &lt;/<span class="keyword">div</span>&gt;</div><div class="line">    &lt;/<span class="keyword">div</span>&gt;</div><div class="line">  &lt;% <span class="keyword">end</span> %&gt;</div><div class="line">  &lt;<span class="keyword">div</span> class=<span class="string">"clear"</span>&gt;&lt;/<span class="keyword">div</span>&gt;</div><div class="line">&lt;/<span class="keyword">div</span>&gt;</div></pre></td></tr></table></figure><br>接著再處理 show 當中的顯示圖片大小，在一開始產生的 <code>ImageUploader</code> class 當中進行設定，調整裡面的 <code>version</code> method。<br><figure class="highlight"><figcaption><span>/app/uploaders/image_uploader.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># Create different versions of your uploaded files:</span></div><div class="line"><span class="built_in">version</span> :thumb <span class="built_in">do</span></div><div class="line">  <span class="built_in">process</span> :scale =&gt; [<span class="number">50</span>, <span class="number">50</span>]</div><div class="line"><span class="function"><span class="keyword">end</span></span></div><div class="line">  </div><div class="line">def scale(width, height)</div><div class="line">  <span class="comment"># do something</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>當中的 scale method 可以透過 RMagick 來做到，而 CarrierWave 本身就有 include <code>RMagick</code> module 了，只要把 <code>image_uploader.rb</code> 檔案開頭的 <code>include CarrierWave::RMagick</code> 註解打開即可。RMagick module 本身就有<a href="http://rubydoc.info/gems/carrierwave/0.5.1/CarrierWave/RMagick" target="_blank" rel="external">許多好用的方法</a>，這邊用了當中的 <code>resize_to_limit</code> method 來調整大小，這個 method 可以讓圖片比例不失真：<br><figure class="highlight"><figcaption><span>/app/uploaders/image_uploader.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">version</span> :thumb <span class="built_in">do</span></div><div class="line"> <span class="built_in">process</span> :resize_to_limit =&gt; [<span class="number">200</span>, <span class="number">200</span>]</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>為了讓 RMagick 發揮作用，必須在 <code>Gemfile</code> 加上 <code>gem &quot;rmagick&quot;</code>；RMagick 必須依靠 ImageMagick 來執行，所以在安裝 RMagick 之前要先確定已經有安裝最新版的 ImageMagick（如果是使用 OS X 則可以用 Homebrew 或 Macports 來安裝）。<br>確定裝完 RMagick 之後，接著在 <code>image_url</code> 就可以指定要什麼 version 了：<br><figure class="highlight"><figcaption><span>/app/views/show.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="variable">%=</span> image_tag painting.image_url(:thumb).to_s <span class="variable">%&gt;</span></div></pre></td></tr></table></figure>
+
+<h3 id="透過_URL_來上傳圖片">透過 URL 來上傳圖片</h3>
+<p>除了傳統的檔案上傳方式外，CarrierWave 還提供了 URL 上傳的方式，可以透過 <code>remote_image_url</code> 這個 field 來做到。值得注意的是，CarrierWave 會由 field 的名字來判斷是哪種上傳方式，上述的命名就是告訴 CarrierWave 要透過 URL 來上傳 image。</p>
+<figure class="highlight"><figcaption><span>/app/views/paintings/_form.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;%= form_for @painting, :html =&gt; {:multipart =&gt; <span class="literal">true</span>} <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.error_messages %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.hidden_field :gallery_id %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :name %&gt;</span><span class="tag">&lt;<span class="title">br</span> /&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :name %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.file_field :image %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :remote_image_url, <span class="string">"or image URL"</span> %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :remote_image_url %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">p</span>&gt;</span><span class="vbscript">&lt;%= f.submit %&gt;</span><span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure><br>在 <code>Painting</code> model 當中也要加上對應的欄位：<br><figure class="highlight"><figcaption><span>/app/models/painting.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Painting</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  attr_accessible <span class="symbol">:gallery_id</span>, <span class="symbol">:name</span>, <span class="symbol">:image</span>, <span class="symbol">:remote_image_url</span></div><div class="line">  belongs_to <span class="symbol">:gallery</span></div><div class="line">  mount_uploader <span class="symbol">:image</span>, <span class="constant">ImageUploader</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/10/14/carrierwave/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/10/14/carrierwave/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/10/14/carrierwave/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/10/26/refresh-page-after-clicking-back-button/">
+        ← refresh page after clicking Back button
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/10/08/active-record/">
+        Active Record →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

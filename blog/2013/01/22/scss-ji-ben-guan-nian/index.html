@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Scss 基本觀念 | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-01-21T16:13:00.000Z" itemprop="datePublished">
+          1月 22 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Scss 基本觀念</h1>
+    <section class="post-content">
+      <p>紀錄 Scss 基本觀念。<br><a id="more"></a></p>
+<h3 id="注解">注解</h3>
+<p><code>// comments</code> 雙斜線在經過 Scss compile 之後，不會在 css 裡面顯示。<br><code>/* comments */</code> 單斜線經過 Scss compile 之後，仍會以 <code>/* comments */</code> 這種注解方式顯示於 css。</p>
+<h3 id="@import_時機">@import 時機</h3>
+<p>在 css 時，通常會避免使用 <code>@import</code>，因為browser 預設會同時下載多份 css（無法像排隊方式下載），必須等到所有 css 都下載完畢，頁面才會正確顯示，如此一來就會有 performance 問題。  </p>
+<p>而在 Scss compile 時候，如果遇到 <code>@import</code>，就會一併把相關檔案也 compile 進去同一份 css，因此 client side 只要下載一份 compiled 過的 css 即可。</p>
+<h3 id="避免產生只需要_@import_的_css">避免產生只需要 @import 的 css</h3>
+<p>如果 application.scss 裡頭 @import 了一個 buttons.scss 檔案，那麼在 compile 之後，將會產生 application.css 與 buttons.css 兩個 css。問題是 application.css 裡頭已經 @import 了 buttons.css，而我們又不會在其他地方用到 buttons.css，這時該怎麼辦呢？<br>把只要用來 @import 的 scss 檔名改以底線開頭就可以了：<code>_buttons.scss</code>，這樣一來就不會產生 buttons.css 了。</p>
+<h3 id="nesting_層數">nesting 層數</h3>
+<p>最多 3 到 4 層；如果層數更多，就要考慮 refactor。</p>
+<h3 id="nesting_properties">nesting properties</h3>
+<p>除了一般的：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class">.content</span> {</div><div class="line">  <span class="attribute">border</span><span class="value">: <span class="number">1px</span> solid <span class="hexcolor">#ccc</span>;</span></div><div class="line">  <span class="tag">h2</span> {</div><div class="line">    <span class="attribute">font-size</span><span class="value">: <span class="number">3em</span>;</span></div><div class="line">  }</div><div class="line">  <span class="tag">p</span> {</div><div class="line">    <span class="attribute">font-size</span><span class="value">: <span class="number">1.5em</span>;</span></div><div class="line">  }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>會產生：</p>
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class">.content</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">border</span>:<span class="value"> <span class="number">1px</span> solid <span class="hexcolor">#ccc</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="class">.content</span> <span class="tag">h2</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">font-size</span>:<span class="value"> <span class="number">3em</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="class">.content</span> <span class="tag">p</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">font-size</span>:<span class="value"> <span class="number">1.5em</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<p>nesting properties 還可以這樣用：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class">.btn</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">text</span>:<span class="value"> {</span></span></div><div class="line">    decoration: underline;</div><div class="line">    <span class="rule"><span class="attribute">transform</span>:<span class="value"> lowercase</span></span>;</div><div class="line">  <span class="rule">}</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>產生：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class">.btn</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">text-decoration</span>:<span class="value"> underline</span></span>;</div><div class="line">  <span class="rule"><span class="attribute">text-transform</span>:<span class="value"> lowercase</span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<h3 id="&amp;_符號">&amp; 符號</h3>
+<p>直接看程式碼：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class">.content</span> {</div><div class="line">  <span class="attribute">border</span><span class="value">: <span class="number">1px</span> solid <span class="hexcolor">#ccc</span>;</span></div><div class="line">  <span class="class">.callout</span> {</div><div class="line">    <span class="attribute">border-color</span><span class="value">: red;</span></div><div class="line">  }</div><div class="line">  &amp;<span class="class">.callout</span> {</div><div class="line">    <span class="attribute">border-color</span><span class="value">: green;</span></div><div class="line">  }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>會變成：</p>
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class">.content</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">border</span>:<span class="value"> <span class="number">1px</span> solid <span class="hexcolor">#ccc</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="class">.content</span> <span class="class">.callout</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">border-color</span>:<span class="value"> red</span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="class">.content</span><span class="class">.callout</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">border-color</span>:<span class="value"> green</span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<p><code>&amp;</code> 符號的其他例子：  </p>
+<h4 id="(&amp;_後面接_selector)">(<code>&amp;</code> 後面接 selector)</h4>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="tag">a</span> {</div><div class="line">  <span class="attribute">color</span><span class="value">: <span class="hexcolor">#999</span>;</span></div><div class="line">  &amp;<span class="pseudo">:hover</span> {</div><div class="line">    <span class="attribute">color</span><span class="value">: <span class="hexcolor">#777</span>;</span></div><div class="line">  }</div><div class="line">  &amp;<span class="pseudo">:active</span> {</div><div class="line">    <span class="attribute">color</span><span class="value">: <span class="hexcolor">#888</span>;</span></div><div class="line">  }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>變成：</p>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="tag">a</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">color</span>:<span class="value"> <span class="hexcolor">#999</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="tag">a</span><span class="pseudo">:hover</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">color</span>:<span class="value"> <span class="hexcolor">#777</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="tag">a</span><span class="pseudo">:active</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">color</span>:<span class="value"> <span class="hexcolor">#888</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+
+<h4 id="(&amp;_前面接_selector)">(<code>&amp;</code> 前面接 selector)</h4>
+<figure class="highlight"><figcaption><span>application.scss</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class">.sidebar</span> {</div><div class="line">  <span class="attribute">float</span><span class="value">: right;</span></div><div class="line">  <span class="attribute">width</span><span class="value">: <span class="number">300px</span>;</span></div><div class="line">  <span class="class">.users</span> &amp; {</div><div class="line">    <span class="attribute">width</span><span class="value">: <span class="number">400px</span>;</span></div><div class="line">  }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>變成：</p>
+<figure class="highlight"><figcaption><span>application.css</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class">.sidebar</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">float</span>:<span class="value"> right</span></span>;</div><div class="line">  <span class="rule"><span class="attribute">width</span>:<span class="value"> <span class="number">300px</span></span></span>;</div><div class="line"><span class="rule">}</span></div><div class="line"><span class="class">.users</span> <span class="class">.sidebar</span> <span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">width</span>:<span class="value"> <span class="number">400px</span></span></span>;</div><div class="line"><span class="rule">}</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/01/22/scss-ji-ben-guan-nian/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/01/22/scss-ji-ben-guan-nian/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/01/22/scss-ji-ben-guan-nian/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/01/23/scss-variable/">
+        ← Scss - variable
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/01/11/meta-yield/">
+        meta_yield →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>nested attributes | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-05T14:43:00.000Z" itemprop="datePublished">
+          12月 5 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">nested attributes</h1>
+    <section class="post-content">
+      <p>nested attribute 筆記。<br><a id="more"></a></p>
+<figure class="highlight"><figcaption><span>/app/models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_one <span class="symbol">:account_setting</span>, <span class="symbol">dependent:</span> <span class="symbol">:destroy</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>/app/views/users/edit.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;%= form_for(@user) <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :name %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :name %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  ...</div><div class="line">  <span class="vbscript">&lt;%= fields_for :account_setting <span class="keyword">do</span> |a| %&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    	<span class="vbscript">&lt;%= a.label :public_email %&gt;</span></div><div class="line">    	<span class="vbscript">&lt;%= a.check_box :public_email %&gt;</span></div><div class="line">  	<span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>針對上面的 nested attributes，<code>controller</code> 可以從原本的寫法：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>create</div><div class="line">  <span class="variable">@user</span> = <span class="constant">User</span>.new(params[<span class="symbol">:user</span>])</div><div class="line">  <span class="variable">@account_setting</span> = <span class="constant">AccountSetting</span>.new(params[<span class="symbol">:account_setting</span>])</div><div class="line"></div><div class="line">  <span class="keyword">if</span> <span class="variable">@user</span>.save</div><div class="line">    <span class="variable">@account_setting</span>.user = <span class="variable">@user</span></div><div class="line">    <span class="variable">@account_setting</span>.save</div><div class="line">    redirect_to(<span class="variable">@user</span>, <span class="symbol">notice:</span> <span class="string">'User was successfully created.'</span>)</div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">action:</span> <span class="string">"new"</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>簡化為：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">def <span class="operator"><span class="keyword">create</span></span></div><div class="line">  @<span class="keyword">user</span> = <span class="keyword">User</span>.new(params[:<span class="keyword">user</span>])</div><div class="line"></div><div class="line">  <span class="keyword">if</span> @<span class="keyword">user</span>.save</div><div class="line">    redirect_to(@<span class="keyword">user</span>, notice: <span class="string">'User was successfully created.'</span>)</div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="keyword">action</span>: <span class="string">"new"</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>但首先要在 <code>model</code> 裡頭加上 <code>accepts_nested_attributes_for</code>：</p>
+<figure class="highlight"><figcaption><span>/app/models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_one <span class="symbol">:account_setting</span>, <span class="symbol">dependent:</span> <span class="symbol">:destroy</span></div><div class="line">  accepts_nested_attributes_for <span class="symbol">:account_setting</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>這樣在 <code>save</code> user 的時候，不但會對 user 做 validate，也同時會對他的 nested_attributes 進行 validate，所以如果 <code>account_setting</code> validate fail，那 user 也不會被 save。<br><br>此外，<code>edit.html.erb</code> 也要做些小修改：<br><figure class="highlight"><figcaption><span>/app/views/users/edit.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;%= form_For(@user) do |f| %&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">  &lt;%= f.fields_for :account_setting do |a| %&gt;	<span class="comment"># 前面加上 f，表示屬於這個 user</span></div></pre></td></tr></table></figure>
+
+<p>最後，在 <code>new</code> action 也要加上 <code>account_setting</code>：</p>
+<p><figure class="highlight"><figcaption><span>/app/controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>new</div><div class="line">    <span class="variable">@user</span> = <span class="constant">User</span>.new(<span class="symbol">:account_setting</span> =&gt; <span class="constant">AccountSetting</span>.new)</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><code>new</code> action 這個步驟可以確保在使用 user form 的時候，也可以叫出 account_setting 的欄位。</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/05/nested-attributes/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/05/nested-attributes/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/05/nested-attributes/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/06/models-without-database/">
+        ← models without database
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/04/filter/">
+        filter →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

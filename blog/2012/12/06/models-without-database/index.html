@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>models without database | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-06T06:04:00.000Z" itemprop="datePublished">
+          12月 6 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">models without database</h1>
+    <section class="post-content">
+      <p>Model 筆記。<br><a id="more"></a></p>
+<h2 id="情境">情境</h2>
+<p>假設現在要做一個 contact us 的表單，當中包含 <code>name</code>、<code>email</code>、與 <code>body</code>。</p>
+<figure class="highlight"><figcaption><span>/app/views/contact_us/new.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">h1</span>&gt;</span>Contact US<span class="tag">&lt;/<span class="title">h1</span>&gt;</span></div><div class="line"></div><div class="line"><span class="vbscript">&lt;%= form_for :contact, url: send_email_path <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :name %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :name %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :email %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :email %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.label :body %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_area :body %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"actions"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.submit %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>然後會有相應的 controller，先看看寫法比較不好的 controller：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/contact_us_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ContactUsController</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>new</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>send_email</div><div class="line">    name = params[<span class="symbol">:contact</span>][<span class="symbol">:name</span>]</div><div class="line">    email = params[<span class="symbol">:contact</span>][<span class="symbol">:email</span>]</div><div class="line">    body = params[<span class="symbol">:contact</span>][<span class="symbol">:body</span>]</div><div class="line"></div><div class="line">    <span class="keyword">if</span> name.blank? || email.blank? || body.blank?</div><div class="line">      flash.now[<span class="symbol">:notice</span>] = <span class="string">"Please fill out all fields"</span></div><div class="line">      render <span class="symbol">action:</span> <span class="string">'new'</span></div><div class="line">    <span class="keyword">else</span></div><div class="line">      <span class="constant">Notifications</span>.contact_us(name, email, body).deliver</div><div class="line">      flash[<span class="symbol">:notice</span>] = <span class="string">"Email sent, we'll get back to you"</span></div><div class="line">      redirect_to root_path</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>現在要將上面的 controller 改用 non-Active Record model 來實作，因此在 <code>new</code> action 裡面就可以 new 一個 object；<br>然後 <code>send_email</code> 裡頭也是用 object 來接收 params。</p>
+<figure class="highlight"><figcaption><span>/app/controllers/contact_us_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ContactUsController</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>new</div><div class="line">    <span class="variable">@contact_form</span> = <span class="constant">ContactForm</span>.new</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>send_email</div><div class="line">    <span class="variable">@contact_form</span> = <span class="constant">ContactForm</span>.new(params[<span class="symbol">:contact_form</span>])</div><div class="line"></div><div class="line">    <span class="keyword">if</span> <span class="variable">@contact_form</span>.valid?</div><div class="line">      <span class="constant">Notifications</span>.contact_us(<span class="variable">@contact_form</span>).deliver</div><div class="line">      redirect_to root_path, <span class="symbol">notice:</span> <span class="string">"Email sent, we'll get back to you"</span></div><div class="line">    <span class="keyword">else</span></div><div class="line">      render <span class="symbol">:new</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>這樣一來，<code>new.html.erb</code> 就可以改傳入 <code>@contact_form</code> 了：</p>
+<figure class="highlight"><figcaption><span>/app/views/contact_us/new.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;h1&gt;Contact US&lt;/h1&gt;</div><div class="line"></div><div class="line">&lt;%= form_for @contact_form, url: send_email_path do |f| %&gt;</div><div class="line"><span class="keyword">...</span></div></pre></td></tr></table></figure>
+
+<p>最後，要針對 <code>ContactForm</code> class 進行實作，因為是 non-Active Record model，所以會是個純 Ruby 的 class：</p>
+<figure class="highlight"><figcaption><span>/app/models/contact_form.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ContactForm</span></span></div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::Validations</span></div><div class="line">  <span class="keyword">include</span> <span class="constant">ActiveModel::Conversion</span>  <span class="comment"># include 這個才可以用 &lt;%= form_for <span class="yardoctag">@contact</span>_form %&gt;</span></div><div class="line"></div><div class="line">  <span class="keyword">attr_accessor</span> <span class="symbol">:name</span>, <span class="symbol">:email</span>, <span class="symbol">:body</span></div><div class="line">  validates_presence_of <span class="symbol">:name</span>, <span class="symbol">:email</span>, <span class="symbol">:body</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>initialize(attributes = {})	<span class="comment"># 對應 ContactForm.new(params[:contact_form])</span></div><div class="line">    attributes.each <span class="keyword">do</span> |name, value|</div><div class="line">      send(<span class="string">"<span class="subst">#{name}</span>="</span>, value)</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>persisted?	<span class="comment"># 加入這個 method 才可以用 &lt;%= form_for <span class="yardoctag">@contact</span>_form %&gt;</span></div><div class="line">    <span class="keyword">false</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>這邊要記得 include <code>ActiveModel::Validations</code> 才可以使用 <code>validates</code> method。  </p>
+<p>另外，為了讓 view 來達到 <code>&lt;%= form_for @contact_form %&gt;</code> 這個功能，還要 include <code>ActiveModel::Conversion</code>，同時底下也要新增 <code>persisted?</code> method。這樣 <code>form_for</code> 才可以知道我們是要用 <code>post</code> method 來 create 資料，或是用 <code>put</code> method 來 update 資料。  </p>
+<p>最後則是用 <code>initialize(attributes = {})</code> method 來達到 <code>ContactForm.new(params[:contact_form])</code> 可以傳入 params 的效果。</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/06/models-without-database/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/06/models-without-database/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/06/models-without-database/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/10/presenter/">
+        ← presenter
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/05/nested-attributes/">
+        nested attributes →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

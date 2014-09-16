@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Devise | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-08-17T02:28:00.000Z" itemprop="datePublished">
+          8月 17 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Devise</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/plataformatec/devise" target="_blank" rel="external">Devise</a> 是一套使用者認證套件。<br><a id="more"></a></p>
+<figure class="highlight"><figcaption><span>/Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'devise'</span></div></pre></td></tr></table></figure>
+
+<pre><code><span class="variable">$ </span>bundle install
+<span class="variable">$ </span>rails g <span class="symbol">devise:</span>install
+</code></pre><p>確認 route 有設定首頁：</p>
+<figure class="highlight"><figcaption><span>config/routes.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">root <span class="symbol">:to</span> =&gt; <span class="string">"welcome#index"</span></div></pre></td></tr></table></figure>
+
+<p>確保 layout 可以顯示 flash 訊息：</p>
+<figure class="highlight"><figcaption><span>app/views/layouts/application.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">p</span> <span class="attribute">class</span>=<span class="value">"notice"</span>&gt;</span><span class="vbscript">&lt;%= notice %&gt;</span><span class="tag">&lt;/<span class="title">p</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">p</span> <span class="attribute">class</span>=<span class="value">"alert"</span>&gt;</span><span class="vbscript">&lt;%= alert %&gt;</span><span class="tag">&lt;/<span class="title">p</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<h4 id="寄信功能：">寄信功能：</h4>
+<p>設定寄信時的預設網站：<br>(若要推至 production 環境，則在 /config/environments/production.rb 也要新增，並將 host 參數改掉)</p>
+<figure class="highlight"><figcaption><span>/config/environments/development.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">config.action_mailer.default_url_options = { <span class="symbol">:host</span> =&gt; <span class="string">'localhost:3000'</span> }</div></pre></td></tr></table></figure>
+
+<p>設定寄信時的顯示名稱：</p>
+<figure class="highlight"><figcaption><span>/config/development.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">config.mailer_sender = "please-<span class="operator"><span class="keyword">change</span>-me-<span class="keyword">at</span>-config-initializers-devise@example.com<span class="string">"</span></span></div></pre></td></tr></table></figure>
+
+<p>設定 Devise 所要的 model，<code>user</code> 可以替換成其他需要的名稱。如果已經有 model 叫 user 的話，<br>就會增加一個 Devise 的欄位到現存的 model 當中。<br>    $ rails g devise user</p>
+<p>上列指令會產生一些檔案，可至 /app/models/user.rb 來選擇需要哪些功能：</p>
+<figure class="highlight"><figcaption><span>/app/models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  <span class="comment"># Include default devise modules. Others available are:</span></div><div class="line">  <span class="comment"># :token_authenticatable, :confirmable,</span></div><div class="line">  <span class="comment"># :lockable, :timeoutable and :omniauthable</span></div><div class="line">  devise <span class="symbol">:database_authenticatable</span>, <span class="symbol">:registerable</span>,</div><div class="line">         <span class="symbol">:recoverable</span>, <span class="symbol">:rememberable</span>, <span class="symbol">:trackable</span>, <span class="symbol">:validatable</span></div><div class="line"></div><div class="line">  <span class="comment"># Setup accessible (or protected) attributes for your model</span></div><div class="line">  attr_accessible <span class="symbol">:email</span>, <span class="symbol">:password</span>, <span class="symbol">:password_confirmation</span>, <span class="symbol">:remember_me</span></div><div class="line">  <span class="comment"># attr_accessible :title, :body</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>亦可至 migration 裡頭增減 columns，接著執行：<br>  $ rake db:migrate</p>
+<p>接著設定登入的連結，其中 <code>user_signed_in?</code> 是 Devise 所提供的 helper，用以判斷使用者是否登入：</p>
+<figure class="highlight"><figcaption><span>/app/views/layouts/application.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% <span class="keyword">if</span> user_signed_in? %&gt;</span></div><div class="line">  Logged in as <span class="tag">&lt;<span class="title">strong</span>&gt;</span><span class="vbscript">&lt;%= current_user.email %&gt;</span><span class="tag">&lt;/<span class="title">strong</span>&gt;</span>.</div><div class="line">  <span class="vbscript">&lt;%= link_to <span class="comment">'Edit profile', edit_user_registration_path %&gt;</span></span> |</div><div class="line">  <span class="vbscript">&lt;%= link_to <span class="string">"Logout"</span>, destroy_user_session_path, method: :delete %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">else</span> %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= link_to <span class="string">"Sign up"</span>, new_user_registration_path %&gt;</span> |</div><div class="line">  <span class="vbscript">&lt;%= link_to <span class="string">"Login"</span>, new_user_session_path %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"></div><div class="line"></div><div class="line"><span class="vbscript">&lt;% flash.<span class="keyword">each</span> <span class="keyword">do</span> |name, msg| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= content_tag :div, msg, id: <span class="string">"flash_#{name}"</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>而 flash 跳出的訊息，也可從 <code>/config/locales/devise.en.yml</code> 更改；如要更改中文訊息，則可新增 <code>/config/locales/devise.zh-TW.yml</code>。</p>
+<p>但仍會有些預設訊息無法修改，此時可執行下列指令，會增加一串 templates，再從中慢慢修改：</p>
+<pre><code><span class="variable">$ </span>rails g <span class="symbol">devise:</span>views
+</code></pre><p> 另外，當使用者 <code>login</code> 之後，URL 預設為 <code>sign_in</code>，可至 <code>/config/routes.rb</code> 當中進行修改：<br> <figure class="highlight"><figcaption><span>/config/routes.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="constant">Blog:</span><span class="symbol">:Application</span>.routes.draw <span class="keyword">do</span></div><div class="line">devise_for <span class="symbol">:users</span>, <span class="symbol">path_names:</span> {<span class="symbol">sign_in:</span> <span class="string">"login"</span>, <span class="symbol">sign_out:</span> <span class="string">"logout"</span>}</div><div class="line"></div><div class="line">resources <span class="symbol">:articles</span></div><div class="line">root <span class="symbol">to:</span> <span class="string">'articles#index'</span></div><div class="line"><span class="keyword">end</span></div><div class="line"> </div></pre></td></tr></table></figure></p>
+<h4 id="變更認證欄位">變更認證欄位</h4>
+<p>如果想用 username 來取代預設的 email 來認證，必須先要在 database 裡面新增一個 username 的欄位：<br>    $ rails g migration add_username_to_users username<br>    $ rake db:migrate</p>
+<p>在 session template 當中的名稱也要跟著變：</p>
+<figure class="highlight"><figcaption><span>/app/views/devise/sessions/new.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;%= form_for(resource, :as =&gt; resource_name, :url =&gt; session_path(resource_name)) <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">	<span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span><span class="vbscript">&lt;%= f.label :username %&gt;</span><span class="tag">&lt;<span class="title">br</span> /&gt;</span></div><div class="line">	<span class="vbscript">&lt;%= f.text_field :username %&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"></div><div class="line">	# Other fields omitted.</div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure><br>edit 和 registeration templates 也要記得改。<br>然後再將 <code>/config/initializers/devise.rb</code> 當中的 <code>config.authentication_keys</code> 反註解並改為 username，同時新增 <code>case_insensitive_keys</code> 和 <code>strip_whitespace_keys</code>。<br><figure class="highlight"><figcaption><span>/config/initializers/devise.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">config.authentication_keys = [ <span class="symbol">:username</span> ]</div><div class="line">config.case_insensitive_keys = [ <span class="symbol">:username</span> ]</div><div class="line">config.strip_whitespace_keys = [ <span class="symbol">:username</span> ]</div></pre></td></tr></table></figure>
+
+<p>最後到 <code>User</code> model 的 <code>attr_accessible</code> 加上這個欄位以便能夠 mass-assignment，另外還要記得驗證是否空白。</p>
+<figure class="highlight"><figcaption><span>/app/models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  <span class="comment"># Include default devise modules. Others available are:</span></div><div class="line">  <span class="comment"># :token_authenticatable, :confirmable,</span></div><div class="line">  <span class="comment"># :lockable, :timeoutable and :omniauthable</span></div><div class="line">  devise <span class="symbol">:database_authenticatable</span>, <span class="symbol">:registerable</span>,</div><div class="line">         <span class="symbol">:recoverable</span>, <span class="symbol">:rememberable</span>, <span class="symbol">:trackable</span>, <span class="symbol">:validatable</span></div><div class="line"></div><div class="line">  <span class="comment"># Setup accessible (or protected) attributes for your model</span></div><div class="line">  attr_accessible <span class="symbol">:email</span>, <span class="symbol">:password</span>, <span class="symbol">:password_confirmation</span>, <span class="symbol">:remember_me</span>, <span class="symbol">:username</span></div><div class="line">  validates_presence_of <span class="symbol">:username</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h4 id="確認使用者是否登入">確認使用者是否登入</h4>
+<p>在做其他的 controller action 時（比如 post 一篇文章），要先確認使用者是否登入，此時可以把 Devise 所提供的 method: <code>authenticate_user!</code> 加到 before_filter 中：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/posts_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">PostsController</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  before_filter <span class="symbol">:authenticate_user!</span>, <span class="symbol">except:</span> [<span class="symbol">:index</span>, <span class="symbol">:show</span>]</div><div class="line"></div><div class="line">  <span class="comment"># Actions omitted</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/08/17/devise/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/08/17/devise/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/08/17/devise/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/08/21/delayed-job/">
+        ← Delayed Job
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/07/20/deploy-rails-3-with-apache-mysql-passenger-capistrano-to-ec2/">
+        deploy Rails 3 with Apache MySQL Passenger Capistrano to EC2 →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

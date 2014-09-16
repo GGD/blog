@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>memoization | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-11T04:13:00.000Z" itemprop="datePublished">
+          12月 11 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">memoization</h1>
+    <section class="post-content">
+      <p>Memoization 筆記。<br><a id="more"></a></p>
+<p>關於 memoization，<a href="http://rails-bestpractices.com/posts/59-use-memoization" target="_blank" rel="external">這裡</a> 有篇文章解釋其用途。<br>gem：<a href="https://github.com/matthewrudy/memoist" target="_blank" rel="external">Memoist</a></p>
+<h2 id="使用情境">使用情境</h2>
+<figure class="highlight"><figcaption><span>/app/presenters/tweets/index_presenter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tweets::IndexPresenter</span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>initialize(user)</div><div class="line">    <span class="variable">@user</span> = user</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>recent_tweet</div><div class="line">    <span class="variable">@user</span>.tweets.first</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="variable">%=</span> <span class="variable">@presenter</span>.recent_tweet.body <span class="variable">%&gt;</span></div><div class="line">&lt;<span class="variable">%=</span> <span class="variable">@presenter</span>.recent_tweet.created_at <span class="variable">%&gt;</span></div></pre></td></tr></table></figure>
+
+<p>在 view 當中，針對 <code>@presenter</code> 的 <code>recent_tweet</code> method 呼叫了一次以上。<br>由於 Rails 具有 query cache，所以實際上只會 query 一次，但會產生兩個不同的 objects 浪費記憶體。</p>
+<h2 id="memoization">memoization</h2>
+<h3 id="第一種做法">第一種做法</h3>
+<p>為了不造成浪費，我們在 <code>recent_tweet</code> method 裡頭宣告一個 instant variable：</p>
+<figure class="highlight"><figcaption><span>/app/presenters/tweets/index_presenter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">...</span></div><div class="line">def recent_tweet</div><div class="line">  @recent_tweet ||= @user.tweets.first</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>這樣一來，當 <code>recent_tweet</code> method 第一次被呼叫時，會先跑一次 query；而第二次被呼叫時，就會回傳剛剛產生並 cache 住的結果了。</p>
+<h3 id="第二種做法">第二種做法</h3>
+<p>memoization 還有第二種做法：</p>
+<figure class="highlight"><figcaption><span>/app/presenter/tweets/index_presenter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tweets::IndexPresenter</span></span></div><div class="line">  extend <span class="constant">ActiveSupport::Memoizable</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>initialize(user)</div><div class="line">    <span class="variable">@user</span> = user</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>recent_tweet</div><div class="line">    <span class="variable">@user</span>.tweets.first</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  memoize <span class="symbol">:recent_tweet</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>在最前面 include <code>ActiveSupport::Memoizable</code>，然後在最底下 <code>memoize</code> 我們要的 method（可以 memoize 多個 method）。<br><br>## 比較<br>第一種做法因為用到了 <code>||=</code>，如果右邊的值是 <code>false</code> 或 <code>nil</code> 時，instant varible 就不會被存起來。所以萬一用到了 return false 之類的 case 時，就會一直不斷地 query 導致不 memoize，因此第二種的做法比較保險。<br><br>另一個使用 Active Support module 的好處是：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>expensive(num)</div><div class="line">  <span class="comment"># lots of processing</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">memoize <span class="symbol">:expensive</span></div></pre></td></tr></table></figure>
+
+<pre><code>expensive(2)
+expensive(4)
+
+expensive(2)    # <span class="operator"><span class="keyword">use</span> <span class="keyword">cache</span> <span class="keyword">value</span>
+expensive(<span class="number">4</span>)    # <span class="keyword">use</span> <span class="keyword">cache</span> <span class="keyword">value</span></span>
+</code></pre><p>此情境是兩個帶有不同參數的不同 method，後兩者會直接使用 cache value 而不會再 query 一次。方便多了！</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/11/memoization/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/11/memoization/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/11/memoization/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/11/security/">
+        ← Security
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/10/presenter/">
+        presenter →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

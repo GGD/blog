@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>AJAX | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-26T06:07:00.000Z" itemprop="datePublished">
+          11月 26 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">AJAX</h1>
+    <section class="post-content">
+      <p>AJAX 筆記。<br><a id="more"></a></p>
+<h2 id="Delete_Link">Delete Link</h2>
+<p>1) Make the link remote call<br>    &lt;%= link_to ‘delete’, zombie, method: :delete, remote: true %&gt;</p>
+<p>2) Allow the controller to accept the JavaScript call<br>    respond_to |format|<br>      format.js<br>    end</p>
+<p>3) Write the JavaScript to send back to the client</p>
+<figure class="highlight"><figcaption><span>app/views/zombies/destroy.js.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$(</span><span class="string">'#&lt;%= dom_id(@zombie) %&gt;'</span>).fadeOut();</div></pre></td></tr></table></figure>
+
+<h2 id="Create_Form">Create Form</h2>
+<p>1) Write format.js in the controller</p>
+<figure class="highlight"><figcaption><span>app/controllers/zombies_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">class ZombieController &lt; ApplicationController</div><div class="line">  def create</div><div class="line">    @zombie = Zombie.new(params[:zombie])</div><div class="line"></div><div class="line">    respond_to do |format|</div><div class="line">      <span class="keyword">if</span> @zombie.save</div><div class="line">        format.html { <span class="keyword">...</span> }</div><div class="line">        format.json { <span class="keyword">...</span> }</div><div class="line">      <span class="keyword">else</span></div><div class="line">        format.html { <span class="keyword">...</span> }</div><div class="line">        format.json { <span class="keyword">...</span> }</div><div class="line">      end</div><div class="line">      format.js <span class="comment"># Add this line</span></div><div class="line">    end</div><div class="line">  end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>2) Refector the view<br>將原本 view 裡頭的 div_for 拉成一個 partial：</p>
+<figure class="highlight"><figcaption><span>app/views/zombies/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"zombies"</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% @zombie.<span class="keyword">each</span> <span class="keyword">do</span> |zombie| %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;%= div_for zombie <span class="keyword">do</span> %&gt;</span>	# 拉出來成一個 partial</div><div class="line">    ...</div><div class="line">  <span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>變成：</p>
+<figure class="highlight"><figcaption><span>app/views/zombies/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"zombies"</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% @zombie.<span class="keyword">each</span> <span class="keyword">do</span> |zombie| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= render zombie %&gt;</span>	# Rails 會自動找 class 對應的檔案</div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>app/views/zombies/_zombie.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;%= div_for zombie do %&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">&lt;% end %&gt;</div></pre></td></tr></table></figure>
+
+<p>其中 <code>index.html.erb</code> 還可以簡化成：</p>
+<figure class="highlight"><figcaption><span>app/views/zombies/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"zombies"</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;%= render @zombies %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>接著再把  form 加進去：</p>
+<figure class="highlight"><figcaption><span>app/views/zombies/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"zombies"</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;%= render @zombies %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"></div><div class="line"><span class="vbscript">&lt;%= form_for(Zombie.<span class="keyword">new</span>, remote: <span class="literal">true</span>) <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"field"</span>&gt;</span></div><div class="line">    ...</div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"action"</span>&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.submit %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure><br>3) Create the JavaScript<br><figure class="highlight"><figcaption><span>app/views/create.js.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="input"><span class="prompt">&lt;% if @zombie.new_record? %&gt;</span>  <span class="comment"># 表示 save 時候出錯而沒有成功</span></span></div><div class="line">  <span class="variable">$(</span><span class="string">'input#zombie_name'</span>).effect(<span class="string">'highlight'</span>, { <span class="symbol">color:</span> <span class="string">'red'</span>});  <span class="comment"># jQuery-UI</span></div><div class="line">&lt;% <span class="keyword">else</span> %&gt;</div><div class="line">  <span class="variable">$(</span><span class="string">'div#zombies'</span>).append(<span class="string">"&lt;%= escape_javascript(render @zombie) %&gt;"</span>);</div><div class="line">  <span class="variable">$(</span><span class="string">'div#&lt;= dom_id(@zombie) %&gt;'</span>).effect(<span class="string">'highlight'</span>); <span class="comment"># jQuery-UI</span></div><div class="line">&lt;% <span class="keyword">end</span> %&gt;</div></pre></td></tr></table></figure>
+
+<p>由於使用了 jQuery-UI 效果，所以必須要 require jQuery-UI：</p>
+<figure class="highlight"><figcaption><span>app/assets/javascripts/application.js</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="attribute">//</span>=<span class="string"> require jquery_ui</span></div></pre></td></tr></table></figure>
+
+<h2 id="Using_JSON_with_an_API">Using JSON with an API</h2>
+<p>1) Define the form</p>
+<figure class="highlight"><figcaption><span>app/views/zombie/show.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"custom_phase2"</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= form_for @zombie, url: custom_decomp_zombie_path(@zombie) <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.text_field :decomp %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= f.submit %&gt;</span></div><div class="line">  <span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>2) Modify the action</p>
+<figure class="highlight"><figcaption><span>app/controller/zombies_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">def custom_decomp</div><div class="line">  <span class="keyword">...</span></div><div class="line"></div><div class="line">  respond_to do |format|</div><div class="line">    format.js</div><div class="line">    format.json { render json: @zombie.to_json(only: :decomp) }</div><div class="line">  end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>3) Write the client side JavaScript using CoffeeScript</p>
+<figure class="highlight"><figcaption><span>app/assets/javascripts/zombie.js.coffee.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">$(<span class="built_in">document</span>).ready<span class="function"> -&gt;</span></div><div class="line">  $<span class="function"><span class="params">(<span class="string">'div#custom_phase2 form'</span>)</span>.<span class="title">submit</span> <span class="params">(event)</span> -&gt;</span></div><div class="line">    event.preventDefault()</div><div class="line"></div><div class="line">    url = $(<span class="keyword">this</span>).attr(<span class="string">'action'</span>)</div><div class="line">    custom_decomp = $(<span class="string">'div#custom_phase2 #zombie_decomp'</span>).val()</div><div class="line"></div><div class="line">    $.ajax</div><div class="line">      <span class="attribute">type</span>: <span class="string">'put'</span></div><div class="line">      <span class="attribute">url</span>: url</div><div class="line">      <span class="attribute">data</span>: { <span class="attribute">zombie</span>: { <span class="attribute">decomp</span>: custom_decomp } }</div><div class="line">      <span class="attribute">dataType</span>: <span class="string">'json'</span></div><div class="line">      <span class="attribute">success</span>: <span class="function"><span class="params">(json)</span> -&gt;</span>  <span class="comment"># if request is successful</span></div><div class="line">        $(<span class="string">'#decomp'</span>).text(json.decomp).effect(<span class="string">'highlight'</span>)</div><div class="line">        $(<span class="string">'div#custom_phase2'</span>).fadeOut() <span class="keyword">if</span> json.decomp == <span class="string">"Dead (again)"</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/26/ajax/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/26/ajax/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/26/ajax/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/03/3bu-zou-zai-heroku-shang-zhi-xing-da-liang-de-rails-app/">
+        ← 3 步驟在 Heroku 上執行稍大型的 Rails app
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/22/helper/">
+        helper →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

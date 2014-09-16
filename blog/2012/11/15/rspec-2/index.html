@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rspec(2) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-15T05:47:00.000Z" itemprop="datePublished">
+          11月 15 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Rspec(2)</h1>
+    <section class="post-content">
+      <p><a href="http://rspec.info/" target="_blank" rel="external">Rspec</a> 是用來測試的一個套件，這邊簡單筆記一下教學<br><a id="more"></a></p>
+<h3 id="Install_in_Rails">Install in Rails</h3>
+<figure class="highlight"><figcaption><span>Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">group <span class="symbol">:development</span>, <span class="symbol">:test</span> <span class="keyword">do</span></div><div class="line">	gem <span class="string">'rspec-rails'</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>接著執行 <code>bundle</code> ，會自動安裝相關的套件<br>然後在專案底下執行：<br>    $ rails g rspec:install<br>        create .rspec<br>        create spec/spec_helper.rb<br>會產生 rspec 設定檔，其中一段：<br>    Dir[Rails.root.join(“spec/support/<em>*/</em>.rb”)].each {|f| require f}<br>會 require 在 spec/support 底下所有的 helper 檔案，對於自訂 matcher 與 helper 會方便許多。<br>而如果要更改預設的 mocking framework，可以在下述修改：<br><figure class="highlight"><figcaption><span>spec/spec_helper.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="constant">RSpec</span>.configure <span class="keyword">do</span> |config|</div><div class="line">	config.mock_with <span class="symbol">:mocha</span>	<span class="comment"># 改成其他 mocking framework</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h3 id="OUTPUT">OUTPUT</h3>
+<p>在執行 rspec 時，選擇測試對象：<br>    $ rspec                                    # 測試所有的 <code>_spec.rb</code> 檔<br>    $ rspec spec/models                        # 測試某個資料夾底下的 <code>_spec.rb</code><br>    $ rspec spec/models/zombie_spec.rb        # 測試特定檔案<br>    $ rspec spec/models/zombie_spec.rb:4    # 測試某個檔案裡頭的特定行，rspec 會找出離該行最近的 example 進行測試</p>
+<h4 id="參數">參數</h4>
+<p>也可以加入一些參數將 output 做些改變。<br>比如，<code>--color</code> 可以讓 output 加入顏色以方便閱讀。<br>    $ rspec —color spec/models/zombie_spec.rb<br>參數 <code>--format documentation</code> 則讓 output 更為詳細，這也是一個好的 rspec 等同於一份 document 的原因。<br>    $ rspec —color —format documentation spec/models/zombie_spec.rb<br>每次執行 rspec 都要輸入這麼多參數是挺煩人的，因此也可以把這些參數加到 <code>.rspec</code> 檔裡作為 default。</p>
+<figure class="highlight"><figcaption><span>.rspec</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">-<span class="ruby">-color</span></div><div class="line">-<span class="ruby">-format documentation</span></div></pre></td></tr></table></figure>
+
+<h3 id="Model_spec">Model spec</h3>
+<p>現在想要測試 zombie ‘is invalid without a name’，首先要針對 <code>zombie.rb</code> 實作：</p>
+<figure class="highlight"><figcaption><span>app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	validates <span class="symbol">:name</span>, <span class="symbol">presence:</span> <span class="keyword">true</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>接著回到 zombie_spec.rb 裡頭，為了要使用 rspec 的各種 helper，首先要 require <code>spec_helper</code>，接著才針對 zombie 這個 class 實作 describe block。</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">requre <span class="string">'spec_helper'</span></div><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'is invalid without a name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span></div><div class="line">		zombie.should_not be_valid</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>當中的 <code>be_valid</code> 是 predicate matcher，對應 Active Record 的 <code>valid?</code> method。<br><br>### Useful Matchers<br><br>#### match<br><code>match</code> matcher 可以測試是否含有特定字串。比如要測試 zombie <code>name</code> 是否有 <code>Ash Clone</code> 這個字眼：<br><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">"has a name that matches 'Ash Clone'"</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: <span class="string">"Ash Clone 1"</span>)</div><div class="line">		zombie.name.should match(/Ash Clone \d/)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h4 id="include">include</h4>
+<p><code>include</code> matcher 可以測試 array 裡面是否有特定 item。比如要測試 zombie 會發出兩種叫聲：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'include tweets'</span> <span class="built_in">do</span></div><div class="line">		tweet1 = Tweet.<span class="built_in">new</span>(status: <span class="string">'Uuuuuuuhhhh'</span>)</div><div class="line">		tweet2 = Tweet.<span class="built_in">new</span>(status: <span class="string">'Arrrrgggg'</span>)</div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: <span class="string">'Ash'</span>, tweets: [tweet1, tweet2])</div><div class="line">		zombie.tweets.should <span class="built_in">include</span>(tweet1)</div><div class="line">		zombie.tweets.should <span class="built_in">include</span>(tweet2)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h4 id="have">have</h4>
+<p><code>have</code> matcher 則是類似 <code>should equal_to</code>。比如 zombie 生下來就有兩種武器：  </p>
+<p>直覺寫法：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'starts with two weapons'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: <span class="string">'Ash'</span>)</div><div class="line">		zombie.weapons.should == <span class="number">2</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>更 human 的寫法：</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'starts with two weapons'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: <span class="string">'Ash'</span>)</div><div class="line">		zombie.should have(<span class="number">2</span>).weapons</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>下列的變形 <code>have</code> matcher 也可行：<br>    have(n)                # n 為數字<br>    have_at_least(n)<br>    have_at_most(n)</p>
+<h4 id="change">change</h4>
+<p>如果已經預期特定的動作會產生特定的結果，可以使用 <code>change</code> method 搭配 <code>expect</code> block 來做詳述。<br>比如說我們預期 new 一個 zombie 並 save 後，zombie 的數量會增加一個：</p>
+<p><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'changes the number of Zombies'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: <span class="string">'Ash'</span>)</div><div class="line">		expect { zombie.save }.<span class="built_in">to</span> change { zombie.count }.<span class="keyword">by</span>(<span class="number">1</span>)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>其中 <code>Zombie.count</code> 會在 「expect 前」與「expect 後」各執行一次以做比較；<code>by(1)</code> 則是要拿來比較的結果。<br>除了 <code>by(n)</code>，類似的 matcher 還有 <code>from(n)</code>、<code>to(n)</code> 等，甚至還可以串在一起：<code>from(1).to(5)</code>。</p>
+<h4 id="more_matchers">more matchers</h4>
+<p>matcher 還可以處理各種狀況，例如：<br><code>respond_to(&lt;method_name&gt;)</code> 測試 zombie 對 <code>hungry?</code> 有沒有回應：<br>    @zombie.should respond_to(hungry?)</p>
+<p><code>be_within(&lt;range&gt;).of(&lt;expected&gt;)</code> 測試寬度是否介於 0.1 與 33.3 之間：<br>    @width.should be_within(0.1).of(33.3)</p>
+<p><code>exist</code> 測試 zombie 是否存在：<br>    @zombie.should exist</p>
+<p><code>satisfy {&lt;block&gt;}</code> 則允許傳入一個 block，如果 block 回傳 true，那測試就能 pass：<br>    @zombie.should satisfy { |zombie| zombie.hungry? }</p>
+<p><code>be_kind_of(&lt;class&gt;)</code> 測試 hungry_zombie 是否繼承自 Zombie：<br>    @hungry_zombie.should be_kind_of(Zombie)        # HungryZombie &lt; Zombie</p>
+<p><code>be_an_instance_of(&lt;class&gt;)</code> 測試 zombie 的叫聲是不是屬於 string 的 instance：<br>    @status.should be_an_instance_of(String)</p>
+<h3 id="Raise_Error">Raise_Error</h3>
+<p>除了剛剛提到的 <code>change</code> matcher，<code>expect</code> 還可以與 <code>raise_error</code> 做搭配。比如我們知道 zombie 必須要有個 <code>name</code>，如果不給 <code>name</code> 而直接 save 的話就會產生 <code>ActiveRecord::RecordInvalid</code> 錯誤：</p>
+<p><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'raises an error if saved without a name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span></div><div class="line">		expect { zombie.save! }.<span class="built_in">to</span> raise_error(</div><div class="line">			ActiveRecord::RecordInvalid</div><div class="line">		)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>其中 <code>raise_error</code> 可以因應各種狀況，替換不同的 error。而 <code>.to</code> 也有不同的選擇，例如 <code>not_to</code> 或 <code>to_not</code> 等。  </p>
+<p>source: <a href="http://www.codeschool.com/" target="_blank" rel="external">Code School</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/15/rspec-2/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/15/rspec-2/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/15/rspec-2/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/15/rspec-3/">
+        ← Rspec(3)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/14/rspec-1/">
+        Rspec(1) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

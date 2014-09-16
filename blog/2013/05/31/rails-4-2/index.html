@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails 4(2) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-05-31T05:05:00.000Z" itemprop="datePublished">
+          5月 31 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails 4(2)</h1>
+    <section class="post-content">
+      <p>紀錄 Rails 3 to Rails 4 的一些改變。<br><a id="more"></a></p>
+<h2 id="FINDERS">FINDERS</h2>
+<p>在 Rails 3 當中，old-style finders 的寫法已經被摒棄了：<br>    Post.find(:all, conditions: { author: ‘admin’ })  # deprecated</p>
+<p>在 Rails 4 裡，比較正確的寫法應該是：<br>    Post.where(author: ‘admin’)</p>
+<h3 id="FIND_BY">FIND_BY</h3>
+<p>此外，Dynamic find_by finders 也被摒棄掉了：<br>    Post.find_by_title(‘Rails 4’, conditions: { author: ‘admin’ })  # deprecated</p>
+<p>在 Rails 4 裡，要寫成：<br>    Post.find_by(title: ‘Rails 4’, author: ‘admin’)</p>
+<p>或是寫成另一種比較好維護的寫法：<br>    post_params = { title: ‘Rails 4’, author: ‘admin’ }<br>    Post.find_by(post_params)</p>
+<h4 id="more_about_FIND_BY">more about FIND_BY</h4>
+<p>更進一步查看 <code>find_by</code> 的實作方式：</p>
+<figure class="highlight"><figcaption><span>/activerecord/lib/active_record/relation/finder_methods.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">def find_by(*args)</div><div class="line">  <span class="keyword">where</span>(*args).<span class="keyword">take</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>會發現 <code>find_by</code> 只是將 <code>where</code> method 給包起來而已。因此，<code>find_by</code> 也接受 <code>where</code> 的 arguents：<br>    Post.find_by(“publicshed_on &lt; ?”, 2.weeks.ago)</p>
+<h3 id="FINDOR*">FIND<em>OR</em>*</h3>
+<p>同樣地，動態新增 objects 的 <code>find_or_*</code> 寫法也有改變：<br>    Post.find_or_initialize_by_title(‘Rails 4’)  # deprecated<br>    Post.find_or_create_by_title(‘Rails 4’)  # deprecated</p>
+<p>在 Rails 4 當中，要改為：<br>    Post.find_or_initialize_by(title: ‘Rails 4’)<br>    Post.find_or_create_by(title: ‘Rails 4’)</p>
+<h4 id="more_about_FINDOR*">more about FIND<em>OR</em>*</h4>
+<p>動態新增 objects 還有另一種寫法：<br>    Post.where(title: ‘Rails 4’).find_or_create</p>
+<p>意思就是，如果找不到這個 Post，就會新增一個：<br>    Post.where(title: ‘Rails 4’).create</p>
+<p>但是並不建議這種寫法，因為如果有針對 <code>create</code> 寫了任何 callback 的話，就會導致一連串不必要的 query 產生。<br>比如：</p>
+<figure class="highlight"><figcaption><span>/model/post.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">class Post &lt; ActiveRecord::Base</div><div class="line">  after_create :foo</div><div class="line"></div><div class="line">  def foo</div><div class="line">    posts = Post.where(author: <span class="string">'adin'</span>)</div><div class="line">    <span class="keyword">...</span></div><div class="line">  end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>會產生這樣的 query：<br>    SELECT “posts”.* FROM “posts” WHERE “posts”.”title” = ‘Rails 4’ AND “posts”.”author” = ‘admin’…</p>
+<p>明顯不是我們想要的。  </p>
+<p>基於上述原因，Rails 4 才會使用 <code>find_or_create_by</code>：<br>    Post.find_or_create_by(title: ‘Rails 4’)</p>
+<p>這樣一來，如果找不到這個 Post，就只會新增一個：<br>    Post.create(title: ‘Rails 4’)</p>
+<p>產生的 query 會乾淨得多：<br>    SELECT “posts”.* FROM “posts” WHERE “posts”.”author” = ‘admin’</p>
+<p>如果仍然想使用舊的 finders 寫法也不用擔心，這些寫法都包在 activerecord-deprecated_finders 這個 gem 裡頭了。</p>
+<h2 id="UPDATE">UPDATE</h2>
+<p>在 Rails 3 當中，通常會使用下列的方法來進行 update：<br>    @post.update_attributes(post_params)</p>
+<pre><code><span class="variable">@post</span>.update_attribute(<span class="symbol">:title</span>, <span class="string">'Rails 4'</span>) <span class="comment"># might be deprecated in the future</span>
+<span class="variable">@post</span>.update_column(<span class="symbol">:title</span>, <span class="string">'Rails 4'</span>) <span class="comment"># might be deprecated in the future</span>
+</code></pre><p>主要差別在於下面兩個在 update 的過程不會進行 validate。  </p>
+<p>而在 Rails 4 裡，比較恰當的寫法是：<br>    @post.update(post_params)</p>
+<pre><code><span class="variable">@post</span>.update_columns(post_params)
+</code></pre><p>這兩個的差別也是在於 <code>update_columns</code> 會直接產生 SQL statement 並對 database 執行，也就是會 skip validation。</p>
+<h2 id="MODEL-ALL">MODEL.ALL</h2>
+<p>在 Rails 3 當中，通常在 index action 裡面會使用 <code>scoped</code> 先產生一個 active relation object，然後再 chain 其他的 method：</p>
+<figure class="highlight"><figcaption><span>controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@tweets</span> = <span class="constant">Tweet</span>.scoped</div><div class="line">  <span class="keyword">if</span> params[<span class="symbol">:recent</span>]</div><div class="line">    <span class="variable">@tweets</span> = <span class="variable">@tweets</span>.recent  <span class="comment"># dynamic conditions</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>但在 Rails 4 裡，<code>scoped</code> 已經被摒棄掉，而改用 <code>all</code> 了：</p>
+<figure class="highlight"><figcaption><span>controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@tweets</span> = <span class="constant">Tweet</span>.all  <span class="comment">#chainable</span></div><div class="line">  <span class="keyword">if</span> params[<span class="symbol">:recent</span>]</div><div class="line">    <span class="variable">@tweets</span> = <span class="variable">@tweets</span>.recent  <span class="comment"># dynamic conditions</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://codeschool.com" target="_blank" rel="external">CodeSchool</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/05/31/rails-4-2/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/05/31/rails-4-2/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/05/31/rails-4-2/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/06/01/rails-4-3/">
+        ← Rails 4(3)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/05/30/rails-4/">
+        Rails 4 →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

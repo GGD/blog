@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>3 步驟在 Heroku 上執行稍大型的 Rails app | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-03T02:16:00.000Z" itemprop="datePublished">
+          12月 3 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">3 步驟在 Heroku 上執行稍大型的 Rails app</h1>
+    <section class="post-content">
+      <p>只要 3 步驟就可以在 Heroku 上執行稍大型的 Rails app，每秒可處理 200 requests 以及 100 個 concurrent connections。<br><a id="more"></a></p>
+<h2 id="STEP_1:_Use_Unicorn">STEP 1: Use Unicorn</h2>
+<p>既然 Heroku 上面已經有了 Cedar stack，那就順理成章地使用 Unicorn 吧：</p>
+<figure class="highlight"><figcaption><span>Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">group <span class="symbol">:production</span> <span class="keyword">do</span></div><div class="line">  gem <span class="string">'unicorn'</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>config/unicorn.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="preprocessor"># If you have a very small app you may be able to</span></div><div class="line"><span class="preprocessor"># increase this, but in general 3 workers seems to</span></div><div class="line"><span class="preprocessor"># work best</span></div><div class="line">worker_processes <span class="number">3</span></div><div class="line"></div><div class="line"><span class="preprocessor"># Load your app into the master before forking</span></div><div class="line"><span class="preprocessor"># workers for super-fast worker spawn times</span></div><div class="line">preload_app <span class="literal">true</span></div><div class="line"></div><div class="line"><span class="preprocessor"># Immediately restart any workers that</span></div><div class="line"><span class="preprocessor"># haven't responded within 30 seconds</span></div><div class="line">timeout <span class="number">30</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>Procfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">web: bundle <span class="keyword">exec</span> unicorn_rails -p <span class="variable">$PORT</span> -c ./config/unicorn.rb</div></pre></td></tr></table></figure>
+
+<h2 id="STEP_2:_Setup_New_Relic">STEP 2: Setup New Relic</h2>
+<p>New Relic 為了監控 app，所以每 30 秒就會送出一次 request。這樣可以避免 Heroku 會自動停止一段時間沒人訪問的 app，導致下次有人訪問時，需再等待 Heroku 產生 app 的麻煩。<br><a href="https://devcenter.heroku.com/articles/newrelic#ruby" target="_blank" rel="external">這裡</a>有設定的教學。</p>
+<h2 id="STEP_3:_Use_AWS_CloudFront_for_serving_static_assets">STEP 3: Use AWS CloudFront for serving static assets</h2>
+<p><a href="https://aws.amazon.com/cloudfront/" target="_blank" rel="external">AWS CloudFront</a> 可以減少 Heroku workers 的負荷量，並且縮短頁面的讀取時間，大致有以下幾種設定：</p>
+<h3 id="Option_1:_Super_easy">Option 1: Super easy</h3>
+<p>把你的 app 當作 origin server - 在建立 CloudFront 分配時，把 app 的 hostname 作為 origin domain name，然後在 app 當中設定 production asset_host 為 CloudFront distribution URL。<br>設定完成後，每當有 user 第一次訪問 app 時，ColudFront 就會從 app 當中 request 一些必要的 assets 然後 cache 住，再回傳給 user。接下來後續幾次的訪問，CloudFront 就會直接吐資料給 user，而不用再訪問 app 以減少負荷，此機制會一直持續到 expire 為止，app 可以透過 cache headers 來設定這個機制的 expiration time。<br>關於 CloudFront 如何處理 cache headers 可以閱讀<a href="http://docs.amazonwebservices.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html" target="_blank" rel="external">這篇</a>；在 rails app 當中如何設定 cache headers 則可以閱讀<a href="https://devcenter.heroku.com/articles/http-caching-ruby-rails" target="_blank" rel="external">這篇</a>。</p>
+<h3 id="Option_2:_Best_performance">Option 2: Best performance</h3>
+<p>把 app 裡的 assets 上傳到 S3 bucket，然後告訴 CloudFront 直接從 S3 抓取 assets - 這樣一來，CloudFront 就不會訪問到你的 app，而且還能能夠有效縮短 respond time，因為 assets 已經放在 Amazon 上面了。<br><a href="https://github.com/rumblelabs/asset_sync" target="_blank" rel="external">asset_sync</a> 可以將這些步驟自動化。</p>
+<p>把 <code>asset_sync</code> gem 加到 asset group 中：</p>
+<figure class="highlight"><figcaption><span>Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'asset_sync'</span></div></pre></td></tr></table></figure>
+
+<p>然後再把設定檔加到 initializers 當中：</p>
+<figure class="highlight"><figcaption><span>config/initializers/asset_sync.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span> defined?(AssetSync)</div><div class="line">  AssetSync.configure <span class="built_in">do</span> |config|</div><div class="line">    config.fog_provider = <span class="string">'AWS'</span></div><div class="line">    config.fog_directory = <span class="string">'bucket_name'</span></div><div class="line">    <span class="comment"># These can be found under Access Keys in AWS Security Credentials</span></div><div class="line">    config.aws_access_key_id = <span class="string">'REPLACE_ME'</span></div><div class="line">    config.aws_secret_access_key = <span class="string">'REPLACE_ME'</span></div><div class="line"></div><div class="line">    <span class="comment"># Don't delete files from the store</span></div><div class="line">    config.existing_remote_files = <span class="string">'keep'</span></div><div class="line"></div><div class="line">    <span class="comment"># Automatically replace files with their equivalent gzip compressed version</span></div><div class="line">    config.gzip_compression = <span class="constant">true</span></div><div class="line">  <span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>接著執行 <code>rake assets:precompile</code>，assets 就會上傳到設定好的 S3 bucket 了。</p>
+<p>Source: <a href="http://collectiveidea.com/blog/archives/2012/11/26/setup-a-high-volume-site-on-heroku-for-free/" target="_blank" rel="external">Collective Idea</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/03/3bu-zou-zai-heroku-shang-zhi-xing-da-liang-de-rails-app/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/03/3bu-zou-zai-heroku-shang-zhi-xing-da-liang-de-rails-app/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/03/3bu-zou-zai-heroku-shang-zhi-xing-da-liang-de-rails-app/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/04/scope/">
+        ← scope
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/26/ajax/">
+        AJAX →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

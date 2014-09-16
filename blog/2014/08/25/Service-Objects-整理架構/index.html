@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Service Objects 整理架構 | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2014-08-25T08:54:47.000Z" itemprop="datePublished">
+          8月 25 2014
+      </time>
+    
+    
+    | 
+    <a href='/tags/Ruby-on-Rails/'>Ruby on Rails</a>,
+    
+    <a href='/tags/design-pattern/'>design pattern</a>
+    
+    
+</span>
+    <h1 class="post-title">Service Objects 整理架構</h1>
+    <section class="post-content">
+      <p>目前專案是按照 <a href="http://brewhouse.io/blog/2014/04/30/gourmet-service-objects.html" target="_blank" rel="external">這篇</a> 的方式來組織 Rails 專案架構：<br>該篇主要也是使用 service objects 的方式來組織，把較複雜的處理從 Controllers 當中抽出來並放到 <code>services</code> 資料夾中。<br>比較不同的是該作者不推薦以 <code>XXXService</code> 的方式來命名 service objects (比如 <code>TransactionService</code>)；反而推薦一個行為就拆成一個 service，並且以「動詞」為開頭來命名，例如 <code>ApproveTransation</code>, <code>CancelTransaction</code>, <code>BlockAccount</code>…等，如果是同樣類型的 service 還可以另外用個資料夾包起來 (例如 <code>app/services/transaction/approve.rb</code>, <code>app/services/transaction/cancel.rb</code>…)  </p>
+<p>好處是可以很容易從名稱就知道這個 service object 的目的是什麼，而且簡化每個 object 的責任以方便測試。  </p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># app/services/accept_invite.rb</span></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">AcceptInvite</span></span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span><span class="keyword">self</span>.call(invite, user)</div><div class="line">    invite.accept!(user)</div><div class="line">    <span class="constant">UserMailer</span>.invite_accepted(invite).deliver</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+
+
+<p>今天又看到 <a href="http://vrybas.github.io/blog/2014/08/15/a-way-to-organize-poros-in-rails/" target="_blank" rel="external">另一篇</a> 有趣的整理方式：<br>作者主要想法是不要把 service objects 都放在同一個地方，畢竟有些是只跟 controller 有關，有些只跟 model 有關，建議把這些 POROs 放到跟其有關的目錄底下。  </p>
+<p>例如跟 controller 有關的：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="title">controllers</span></div><div class="line">├── dashboard_controller</div><div class="line">│   └── user_list.rb</div><div class="line">└── dashboard_controller.rb</div></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># app/controllers/dashboard_controller/user_list.rb</span></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">DashboardController::UserList</span></span></div><div class="line">  <span class="comment"># codes codes codes</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">DashboardController</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>index</div><div class="line">    <span class="variable">@users</span> = <span class="constant">UserList</span>.new(current_user,</div><div class="line">                          <span class="symbol">page:</span> params[<span class="symbol">:page</span>],</div><div class="line">                          <span class="symbol">per_page:</span> params[<span class="symbol">:per_page</span>],</div><div class="line">                          <span class="symbol">sort_by:</span> params[<span class="symbol">:sort_by</span>],</div><div class="line">                          <span class="symbol">order_asc:</span> params[<span class="symbol">:order_asc</span>]).all</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+
+<p>或是跟 model 有關的：  </p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">models</div><div class="line">├── <span class="literal">user</span></div><div class="line">│   └── following_policy.rb</div><div class="line">│   └── lockable.rb</div><div class="line">│   └── settings.rb</div><div class="line">└── <span class="literal">user</span>.rb</div></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># app/models/user/lockable.rb</span></div><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">User::Lockable</span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>lock_access!</div><div class="line">    update(<span class="symbol">locked_at:</span> <span class="constant">Time</span>.now)</div><div class="line">    <span class="constant">UserMailer</span>.account_locked_email(<span class="keyword">self</span>).deliver</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="comment"># ...</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="comment"># app/models/user/settings.rb</span></div><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">User::Settings</span></span></div><div class="line">  extend <span class="constant">ActiveSupport::Concern</span></div><div class="line"></div><div class="line">  included <span class="keyword">do</span></div><div class="line">    store_accessor <span class="symbol">:settings</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="comment"># ...</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="comment"># app/models/user/following_policy.rb</span></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User::FollowingPolicy</span></span></div><div class="line">  <span class="keyword">attr_reader</span> <span class="symbol">:current_user</span>, <span class="symbol">:other_user</span>, <span class="symbol">:account_verification</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>initialize(current_user, other_user)</div><div class="line">    <span class="variable">@current_user</span> = current_user</div><div class="line">    <span class="variable">@other_user</span> = other_user</div><div class="line">    <span class="variable">@account_verification</span> = current_user.account_verification</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="comment"># ...</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>很喜歡 Rails pure MVC 架構的人可以試試 :)</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2014/08/25/Service-Objects-整理架構/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2014/08/25/Service-Objects-整理架構/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2014/08/25/Service-Objects-整理架構/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2014/09/16/rails-size-length-count/">
+        ← Rails 的 count, length 以及 size
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/06/05/rails-4-5/">
+        Rails 4(5) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

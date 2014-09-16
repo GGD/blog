@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails 4(5) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-06-05T14:45:00.000Z" itemprop="datePublished">
+          6月 5 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails 4(5)</h1>
+    <section class="post-content">
+      <p>紀錄 Rails 3 to Rails 4 的一些改變。<br><a id="more"></a></p>
+<h2 id="FILTERS">FILTERS</h2>
+<p>在 Rails 3 當中常常使用的 <code>before_filter</code>，因為語意不清，因此在 Rails 4 改名為：<code>before_action</code>。（但是念舊的人依然可以在 Rails 4 當中使用 <code>before_filter</code> ）</p>
+<h2 id="SESSION">SESSION</h2>
+<p>首先看一下 Rails 是如何儲存 session 的…  </p>
+<ol>
+<li>browser 第一次發 request 給 server</li>
+<li>server 產生 session[:user_id] = user.id</li>
+<li>server 把 session data 傳送給 browser 並存成 cookie</li>
+<li>browser 之後發送的 request 當中就會夾帶 cookie</li>
+<li>server 接著拿來使用：@current_user ||= User.find(session[:user_id])</li>
+</ol>
+<p>在 Rails 3 中，會先將 session 變數以 digitally signed cookies 的形式送給 browser，使用者無法針對此變數進行修改，但可以讀取。<br>    Name: _AppExampleDigitallySigned<br>    Value: BAh7CUk….<br>有心的使用者此時可以用 ruby code 將其解讀出來：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">require</span> <span class="string">'rack'</span></div><div class="line">cookie <span class="subst">=</span> <span class="string">"BAh7CUk..."</span></div><div class="line">Rack<span class="tag">::Session</span><span class="tag">::Cookie</span><span class="tag">::Base64</span><span class="tag">::Marshal.new.decode</span>(cookie)</div></pre></td></tr></table></figure>
+
+<p>就會得到 user_id 等有用的資訊：</p>
+<pre><code>=&gt; {<span class="string">"session_id"</span>=&gt;<span class="string">"d3b170ba..."</span>, <span class="string">"user_id"</span>=&gt; <span class="string">"123"</span>, <span class="string">"csrf_token"</span>=&gt;<span class="string">"rtkofTr..."</span>}
+</code></pre><p>多少會有 security 風險存在。  </p>
+<p>因此在 Rails 4 當中又多做了一層 security：將其 encrypt。因此使用者既無法修改，也無法讀取。<br>    Name: _ApplicationEnvryptedCookie<br>    Value: REE3QXILc…</p>
+<p>此時就算使用 ruby code 來解讀：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">require</span> <span class="string">'rack'</span></div><div class="line">cookie <span class="subst">=</span> <span class="string">"REE3QXILc..."</span></div><div class="line">Rack<span class="tag">::Session</span><span class="tag">::Cookie</span><span class="tag">::Base64</span><span class="tag">::Marshal.new.decode</span>(cookie)</div></pre></td></tr></table></figure>
+
+<p>就會得到 <code>nil</code></p>
+<h2 id="SECURING_SECRET_KEY_BASE">SECURING SECRET KEY BASE</h2>
+<p>Rails 把 secret key base 放在下列位置，並以明碼顯示：</p>
+<figure class="highlight"><figcaption><span>config/initializers/secret_token.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">MyApp<span class="tag">::Application.config.secret_key_base</span> <span class="subst">=</span> <span class="string">'7014c47...'</span></div></pre></td></tr></table></figure>
+
+<p>因此如果要把 application 發佈為 public repo 的話，記得要改成環境變數：</p>
+<figure class="highlight"><figcaption><span>config/initializers/secret_token.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">MyApp::Application.config.secret_key_base = ENV['SECRET_KEY_BASE']</div></pre></td></tr></table></figure>
+
+<h2 id="FLASH_TYPES">FLASH TYPES</h2>
+<p>在 Rails 3 當中，要使用 <code>flash</code> 的 helper methods 時，只能用 registered flash types：<code>notice</code> 以及 <code>alert</code>。<br>在 Rails 4 終於能夠自訂了：</p>
+<figure class="highlight"><figcaption><span>controllers/application_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ApplicationController</span> <span class="inheritance">&lt; <span class="parent">ActionController::Base</span></span></span></div><div class="line">  add_flash_types <span class="symbol">:grunt</span>, <span class="symbol">:snarl</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>用法是：</p>
+<figure class="highlight"><figcaption><span>controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">flash[<span class="symbol">:grunt</span>] = <span class="string">'braaains...'</span></div><div class="line"></div><div class="line"><span class="comment"># 或是簡寫：</span></div><div class="line">redirect_to <span class="variable">@user</span>, <span class="symbol">grunt:</span> <span class="string">'braaains...'</span></div></pre></td></tr></table></figure>
+
+<p>registered flash types:</p>
+<figure class="highlight"><figcaption><span>views/users/show.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"grunt"</span>&gt;</span><span class="vbscript">&lt;%= grunt %&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span></div></pre></td></tr></table></figure>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/06/05/rails-4-5/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/06/05/rails-4-5/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/06/05/rails-4-5/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2014/08/25/Service-Objects-整理架構/">
+        ← Service Objects 整理架構
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/06/02/rails-4-4/">
+        Rails 4(4) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

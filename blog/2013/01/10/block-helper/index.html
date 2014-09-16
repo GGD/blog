@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>block helper | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-01-10T01:49:00.000Z" itemprop="datePublished">
+          1月 10 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">block helper</h1>
+    <section class="post-content">
+      <p>block helper。<br><a id="more"></a></p>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% @presenter.tweets.<span class="keyword">each</span> <span class="keyword">do</span> |tweet| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"tweet_&lt;%= tweet.id %&gt;"</span></span></div><div class="line">      <span class="attribute">class</span>=<span class="value">"&lt;%= 'favorite' if tweet.is_a_favorite?(current_user) %&gt;"</span>&gt;</div><div class="line">    <span class="vbscript">&lt;%= tweet.status %&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>HTML 裡面含有太多的 ruby code，所以可以另外包成一個 helper：</p>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% @presenter.tweets.<span class="keyword">each</span> <span class="keyword">do</span> |tweet| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= tweet_div_for(tweet, current_user) <span class="keyword">do</span> %&gt;</span></div><div class="line">    <span class="vbscript">&lt;%= tweet.status %&gt;</span></div><div class="line">  <span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>/app/helpers/tweets_helper.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>tweet_div_for(tweet, user, &amp;block)</div><div class="line">  klass = <span class="string">'favorite'</span> <span class="keyword">if</span> tweet.is_a_favorite?(user)</div><div class="line"></div><div class="line">  div_for tweet, <span class="symbol">:class</span> =&gt; klass <span class="keyword">do</span></div><div class="line">    <span class="keyword">yield</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="more_about_yield">more about yield</h2>
+<p>一般而言，基本的 application layout 大致如下：</p>
+<figure class="highlight"><figcaption><span>/app/views/layouts/application.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="doctype">&lt;!DOCTYPE html&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">body</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;% flash[:notice] <span class="keyword">if</span> flash[:notice] %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;%= yield %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">html</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>但如果要在 <code>&lt;body&gt;</code> 下邊再插入一個 sidebar 的 <code>yiled</code> 區塊，就會是：</p>
+<figure class="highlight"><figcaption><span>/app/views/layouts/application.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="doctype">&lt;!DOCTYPE html&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">body</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= yield :sidebar %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;% flash[:notice] <span class="keyword">if</span> flash[:notice] %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;%= yield %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">html</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>然後寫個 <code>content_for</code> 區塊來對應上面的 <code>&lt;%= yield :sidebar %&gt;</code>：</p>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;% content_for(:sidebar) do %&gt;</div><div class="line"><span class="keyword">...</span> html here <span class="keyword">...</span></div><div class="line">&lt;% end %&gt;</div></pre></td></tr></table></figure>
+
+<p>但如果要讓 <code>tweets</code> controller 裡面的每個 action 都需要這個 sidebar 呢？</p>
+<h3 id="Nested_Layouts">Nested Layouts</h3>
+<p>解法是先在 <code>tweets</code> controller 裡面指定要使用的 layout：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">TweetController</span> <span class="inheritance">&lt;</span><span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  layout <span class="string">'with_sidebar'</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>然後把剛剛的 <code>content_for(:sidebar)</code> 抽出來，另外包成這個 controller 要使用的 layout。<br>這樣一來，<code>tweets</code> controller 就會先使用指定的 layout 了。</p>
+<figure class="highlight"><figcaption><span>/app/views/layouts/with_sidebar.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;% content_for(:sidebar) do %&gt;</div><div class="line"><span class="keyword">...</span> html here <span class="keyword">...</span></div><div class="line">&lt;% end %&gt;</div><div class="line"></div><div class="line">&lt;%= render :file =&gt; <span class="string">'layouts/application'</span> %&gt;</div></pre></td></tr></table></figure>
+
+<p>因為要使用原本的 application layout，所以最後會再加上這段： <code>&lt;%= render :file =&gt; &#39;layouts/application&#39; %&gt;</code><br>這樣就會讀取原本的 layout 了：</p>
+<figure class="highlight"><figcaption><span>/app/views/layouts/application.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="doctype">&lt;!DOCTYPE html&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">html</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="title">body</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= yield :sidebar %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;% flash[:notice] <span class="keyword">if</span> flash[:notice] %&gt;</span></div><div class="line"></div><div class="line">  <span class="vbscript">&lt;%= yield %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">body</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">html</span>&gt;</span></div></pre></td></tr></table></figure>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/01/10/block-helper/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/01/10/block-helper/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/01/10/block-helper/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/01/11/meta-yield/">
+        ← meta_yield
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/31/seo-friendly-url/">
+        SEO-friendly URL →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

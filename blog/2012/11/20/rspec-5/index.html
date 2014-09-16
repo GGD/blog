@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rspec(5) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-20T05:39:00.000Z" itemprop="datePublished">
+          11月 20 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Rspec(5)</h1>
+    <section class="post-content">
+      <p><a href="http://rspec.info/" target="_blank" rel="external">Rspec</a> 是用來測試的一個套件，這邊簡單筆記一下教學<br><a id="more"></a></p>
+<h1 id="Mocking_and_Stubbing">Mocking and Stubbing</h1>
+<p>首先看看這兩者的字義：<br>Stub：<code>For replacing a method with code that returns a specific result.</code><br>Mock：<code>A stub with an expectation that the method get called.</code>  </p>
+<h3 id="使用情境">使用情境</h3>
+<p>假設 zombie 都配有一個武器：</p>
+<figure class="highlight"><figcaption><span>/app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	has_one <span class="symbol">:weapon</span></div><div class="line">	</div><div class="line">	<span class="function"><span class="keyword">def</span> </span>decapitate</div><div class="line">		weapon.slice(<span class="keyword">self</span>, <span class="symbol">:head</span>)</div><div class="line">		<span class="keyword">self</span>.status = <span class="string">"dead again"</span></div><div class="line">	<span class="keyword">end</span></div><div class="line">	...</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>當 zombie 呼叫了 <code>decapitate</code> method 之後，就會把自己的頭給 slice 掉，然後顯示為 <code>dead again</code>。<br>現在我們想要測試這個 method，但並不想要 zombie 真的使用 weapon 把自己給 slice 掉。也就是在呼叫 <code>decapitate</code> method 時，不想要呼叫 <code>weapon</code> 的 <code>slice</code> method（如下）。<br><figure class="highlight"><figcaption><span>weapon</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>slice(args*)</div><div class="line">	<span class="comment"># complex stuff</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>此時就需要 <code>stub</code> 或 <code>mock</code> 了。<br><br>## Stubbing<br>根據一開始的字義，得知首先必須要 stub out <code>slice</code> method，可以用 <code>zombie.weapon.stub(:slice)</code> 來達成。<br>這段程式碼會到 weapon instance 當中，然後把 <code>slice</code> method 給 stub out 掉並回傳 <code>nil</code>，等同於：<br><figure class="highlight"><figcaption><span>weapon</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>slice(args*)</div><div class="line"> <span class="keyword">return</span> <span class="keyword">nil</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h3 id="Examples_with_stub">Examples with stub</h3>
+<p>接著把 stub 帶入 Rspec 當中：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	let(:zombie) { Zombie.<span class="built_in">create</span> }</div><div class="line">	</div><div class="line">	context <span class="string">"#decapitate"</span> <span class="built_in">do</span>		<span class="comment"># 通常針對某個 class 底下的 function 做測試時，context 名稱都會習慣在前面加個"#"</span></div><div class="line">		<span class="keyword">it</span> <span class="string">"set status to dead again"</span> <span class="built_in">do</span></div><div class="line">			zombie.weapon.stub(:slice)</div><div class="line">			zombie.decapitate</div><div class="line">			zombie.status.should == <span class="string">"dead again"</span></div><div class="line">		<span class="function"><span class="keyword">end</span></span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Mocking">Mocking</h2>
+<p>從上述的 Rspec 當中雖然可以測試 <code>status</code> 是否正確，但我們還需測試 <code>slice</code> function 是不是有被呼叫到，這邊就需要用到 mock 了。<br>相對於 stub，mock 的呼叫方法是 <code>zombie.weapon.should_receive(:slice)</code>，這段作法會先 stub out <code>slice</code> 然後再預期 <code>slice</code> 會有 expectation。<br>接著再把 mock 移到 Rspec 當中，當我們要呼叫 <code>zombie.decapitate</code> 時，Rspec 就會試著呼叫 <code>slice</code> 並回傳 expectation：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	let(:zombie) { Zombie.<span class="built_in">create</span> }</div><div class="line">	</div><div class="line">	context <span class="string">"#decapitate"</span> <span class="built_in">do</span></div><div class="line">		<span class="keyword">it</span> <span class="string">"calls weapon.slice"</span> <span class="built_in">do</span></div><div class="line">			zombie.weapon.should_receive(:slice)</div><div class="line">			zombie.decapitate		</div><div class="line">			<span class="comment"># 記得要呼叫 decapitate，否則會不能通過測試，因為 slice 並沒有被呼叫到</span></div><div class="line">		<span class="function"><span class="keyword">end</span></span></div><div class="line">	</div><div class="line">		<span class="keyword">it</span> <span class="string">"set status to dead again"</span> <span class="built_in">do</span></div><div class="line">			zombie.weapon.stub(:slice)</div><div class="line">			zombie.decapitate</div><div class="line">			zombie.status.should == <span class="string">"dead again"</span></div><div class="line">		<span class="function"><span class="keyword">end</span></span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Mocking_with_param">Mocking with param</h2>
+<p>在使用 mock 時，也可以丟入參數。假設現在有另外一個情境：</p>
+<figure class="highlight"><figcaption><span>/app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>geolocate</div><div class="line">		<span class="constant">Zoogle</span>.graveyard_locator(<span class="keyword">self</span>.graveyard)	<span class="comment"># a web service</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>我們想要測試 <code>geolocate</code> 時，會呼叫帶有 <code>zombie.graveyard</code> 參數的 <code>graveyard_locator</code>，就可以寫成：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">it</span> <span class="string">"calls Zoogle.graveyard_locator"</span> <span class="built_in">do</span></div><div class="line">	Zoogle.should_receive(:graveyard_locator).<span class="operator">with</span>(zombie.graveyard)</div><div class="line">	zombie.geolocate</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Mocking_and_return">Mocking and return</h2>
+<p>延續上面的情境，現在假設 <code>Zoogle.graveyard_locator</code> 會回傳 hash，然後再把 hash 處理成 string：</p>
+<figure class="highlight"><figcaption><span>/app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>geolocate</div><div class="line">		loc = <span class="constant">Zoogle</span>.graveyard_locator(<span class="keyword">self</span>.graveyard)</div><div class="line">		<span class="string">"<span class="subst">#{loc[<span class="symbol">:latitude</span>]}</span>, <span class="subst">#{loc[<span class="symbol">:longitude</span>]}</span>"</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>因此對應的測試可以寫成：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">it</span> <span class="string">"calls Zoogle.graveyard_locator"</span> <span class="built_in">do</span></div><div class="line">	Zoogle.should_receive(:graveyard_locator).<span class="operator">with</span>(zombie.graveyard)</div><div class="line">		.and_return({latitude: <span class="number">2</span>, longitude: <span class="number">3</span>})</div><div class="line">	zombie.geolocate</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Stub_and_return">Stub and return</h2>
+<p>延續上面的情境，既然 <code>geolocate</code> method 當中包含了兩種行為（一個取得回傳值，一個轉為 string），那我們就必須分別測試這兩種行為。<br>因此，剛剛所對應的測試將不使用 mock，而是 stub out <code>graveyard_locator</code>：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">it</span> <span class="string">"calls Zoogle.graveyard_locator"</span> <span class="built_in">do</span></div><div class="line">	Zoogle.stub(:graveyard_locator).<span class="operator">with</span>(zombie.graveyard)</div><div class="line">		.and_return({latitude: <span class="number">2</span>, longitude: <span class="number">3</span>})</div><div class="line">	zombie.geolocate.should == <span class="string">"2, 3"</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="Stub_object">Stub object</h2>
+<p>延續上面的情境，假設現在 <code>graveyard_locator</code> 回傳的是 object，如下：</p>
+<figure class="highlight"><figcaption><span>/app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>geolocate_with_object</div><div class="line">		loc = <span class="constant">Zoogle</span>.graveyard_locator(<span class="keyword">self</span>.graveyard)</div><div class="line">		<span class="string">"<span class="subst">#{loc.latitude}</span>, <span class="subst">#{loc.longitude}</span>"</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>object</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>latitude</div><div class="line">	<span class="keyword">return</span> <span class="number">2</span></div><div class="line"><span class="keyword">end</span></div><div class="line"><span class="function"><span class="keyword">def</span> </span>longitude</div><div class="line">	<span class="keyword">return</span> <span class="number">3</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>那麼測試這個 object 可以寫成：</p>
+<figure class="highlight"><figcaption><span>/spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">it</span> <span class="string">"returns properly formatted lat, long"</span> <span class="built_in">do</span></div><div class="line">	loc.stub(latitude: <span class="number">2</span>, longitude: <span class="number">3</span>)</div><div class="line">	Zoogle.stub(:graveyard_locator).returns(loc)</div><div class="line">	zombie.geolocate_with_object.should == <span class="string">"2, 3"</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure><br>在這段測試當中，首先傳入 hash 來建立一個 stub，這個 hash 裡面的 <code>key</code> 會成為 stub 所呼叫的 method，所以這邊呼叫了 <code>loc.latitude</code> 並且回傳 <code>2</code>；呼叫了 <code>loc.longitude</code> 並回傳 <code>3</code>。<br><br>## More Stub<br>現在換到不同的情境，用 Rspec 來測試 <code>ActionMailer</code>，假設有個 mailer 如下：<br><figure class="highlight"><figcaption><span>app/mailers/zombie_mailer.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ZombieMailer</span> <span class="inheritance">&lt; <span class="parent">ActionMailer::Base</span></span></span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>welcome(zombie)</div><div class="line">		mail(<span class="symbol">from:</span> <span class="string">'admin@zombie.com'</span>, <span class="symbol">to:</span> zombie.email, </div><div class="line">			<span class="symbol">subject:</span> <span class="string">'Welcome Zombie!'</span>)</div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>那直覺的測試寫法會如下：</p>
+<figure class="highlight"><figcaption><span>spec/mailers/zombie_mailer_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">describe <span class="constant">ZombieMailer</span> <span class="keyword">do</span></div><div class="line">	context <span class="string">'#welcome'</span> <span class="keyword">do</span></div><div class="line">		let(<span class="symbol">:zombie</span>) { <span class="constant">Zombie</span>.create(<span class="symbol">email:</span> <span class="string">'ash@zombieemail.com'</span>) }</div><div class="line">		subject { <span class="constant">ZombieMailer</span>.welcome(zombie) }</div><div class="line">		</div><div class="line">		its(<span class="symbol">:from</span>) { should <span class="keyword">include</span>(<span class="string">'admin@zombie.com'</span>) }</div><div class="line">		its(<span class="symbol">:to</span>) { should <span class="keyword">include</span>(zombie.email) }</div><div class="line">		its(<span class="symbol">:subject</span>) { should == <span class="string">'Welcome Zombie! }</span></div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>但是這段寫法其實不太好，因為每次跑到 <code>let(:zombie)</code> 時都會產生一個 ActiveRecord。這邊可以改成產生假的 object，把原本的<br>    let(:zombie) { Zombie.create(email: ‘ash@zombieemail.com’) }<br>改成<br>    let(:zombie) { stub(email: ‘ash@zombieemail.com’) }<br>這樣一來，就可以因為不用產生 ActiveRecord 而讓測試跑得快一點了。</p>
+<h2 id="More_Stub_options">More Stub options</h2>
+<p>使用 mocking 時還有其他的選項，比如說 function 只會被呼叫一次、兩次….<br>    target.should_receive(:function).once<br>                                     .twice<br>                                     .exactly(3).times<br>                                     .at_least(2).times<br>                                     .at_most(3).times<br>                                     .any_number_of_times</p>
+<p>或是傳入不同型態的 param：<br>    target.should_receive(:function).with(no_args())<br>                                     .with(any_args())<br>                                     .with(“B”, anything())<br>                                     .with(3, kind_of(Numeric))<br>                                     .with(/zombie ash/)</p>
+<p>source: <a href="http://www.codeschool.com/" target="_blank" rel="external">Code School</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/20/rspec-5/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/20/rspec-5/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/20/rspec-5/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/20/rspec-6/">
+        ← Rspec(6)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/16/rspec-4/">
+        Rspec(4) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

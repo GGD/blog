@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>counter cache | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-18T23:20:00.000Z" itemprop="datePublished">
+          12月 19 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">counter cache</h1>
+    <section class="post-content">
+      <p>counter cahce。<br><a id="more"></a></p>
+<h2 id="情境">情境</h2>
+<p>在 twitter 當中，顯示每一則 tweet 有多少的 retweet：<br>分別使用 <code>length</code>、<code>count</code>、以及 <code>size</code> (with <code>counter_cache</code>)。</p>
+<h3 id="使用_length">使用 length</h3>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% @tweets.<span class="keyword">each</span> <span class="keyword">do</span> |tweet| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"tweet"</span>&gt;</span></div><div class="line">  	<span class="vbscript">&lt;%= tweet.status %&gt;</span></div><div class="line">  	<span class="tag">&lt;<span class="title">span</span> <span class="attribute">class</span>=<span class="value">"retweets"</span>&gt;</span></div><div class="line">  		<span class="vbscript">&lt;%= pluralize(tweet.retweets.length, <span class="string">"Retweet"</span>) %&gt;</span></div><div class="line">  	<span class="tag">&lt;/<span class="title">span</span>&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>當中的過程是：<br>    For each Tweet</p>
+<pre><code>    1. <span class="operator"><span class="keyword">Select</span> <span class="keyword">all</span> retweets <span class="keyword">where</span> user_id = x
+    <span class="number">2.</span> Populate an <span class="built_in">array</span> <span class="keyword">of</span> tweet objects
+    <span class="number">3.</span> <span class="keyword">call</span> length <span class="keyword">on</span> that <span class="built_in">array</span></span>
+</code></pre><p>看起來明顯不太有效率…</p>
+<h3 id="使用_count">使用 count</h3>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% @tweets.<span class="keyword">each</span> <span class="keyword">do</span> |tweet| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"tweet"</span>&gt;</span></div><div class="line">  	<span class="vbscript">&lt;%= tweet.status %&gt;</span></div><div class="line">  	<span class="tag">&lt;<span class="title">span</span> <span class="attribute">class</span>=<span class="value">"retweets"</span>&gt;</span></div><div class="line">  		<span class="vbscript">&lt;%= pluralize(tweet.retweets.count, <span class="string">"Retweet"</span>) %&gt;</span></div><div class="line">  	<span class="tag">&lt;/<span class="title">span</span>&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>當中的過程是：<br>    For each Tweet</p>
+<pre><code>    1. <span class="operator"><span class="keyword">Select</span> <span class="keyword">all</span> retweets <span class="keyword">where</span> user_id = x
+    <span class="number">2.</span> <span class="keyword">Do</span> a <span class="keyword">count</span> <span class="keyword">query</span> <span class="keyword">for</span> retweets</span>
+</code></pre><p>萬一 tweet 數量一多的話，count query 就會跑很多次，仍然存在著效率問題。</p>
+<h3 id="使用_size_with_counter_cache">使用 size with counter_cache</h3>
+<figure class="highlight"><figcaption><span>/app/views/tweets/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="vbscript">&lt;% @tweets.<span class="keyword">each</span> <span class="keyword">do</span> |tweet| %&gt;</span></div><div class="line">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">class</span>=<span class="value">"tweet"</span>&gt;</span></div><div class="line">  	<span class="vbscript">&lt;%= tweet.status %&gt;</span></div><div class="line">  	<span class="tag">&lt;<span class="title">span</span> <span class="attribute">class</span>=<span class="value">"retweets"</span>&gt;</span></div><div class="line">  		<span class="vbscript">&lt;%= pluralize(tweet.retweets.size, <span class="string">"Retweet"</span>) %&gt;</span></div><div class="line">  	<span class="tag">&lt;/<span class="title">span</span>&gt;</span></div><div class="line">  <span class="tag">&lt;/<span class="title">div</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>當中的過程是：<br>    For each Tweet</p>
+<pre><code>    1. <span class="operator"><span class="keyword">Select</span> <span class="keyword">all</span> retweets <span class="keyword">where</span> user_id = x</span>
+</code></pre><p>只有一個步驟，簡單多了！</p>
+<h2 id="做法">做法</h2>
+<p>首先看一下 <code>tweet</code> 與 <code>retweet</code> 之間的關係：<br><code>tweet</code>(視為 <code>original tweet</code>) 與 <code>retweet</code>(視為 <code>retweet tweet</code>) 其實是同一個 model，<br>其中 <code>retweet tweet</code> belongs_to <code>original tweet</code>；<br>而 <code>original tweet</code> has_many <code>retweet tweet</code>。是個 self-referential relationship。</p>
+<figure class="highlight"><figcaption><span>/app/models/tweet.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tweet</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  belongs_to <span class="symbol">:original_tweet</span>,</div><div class="line">             <span class="symbol">:class_name</span> =&gt; <span class="string">'Tweet'</span>,</div><div class="line">             <span class="symbol">:foreign_key</span> =&gt; <span class="symbol">:tweet_id</span></div><div class="line"></div><div class="line">  has_many <span class="symbol">:retweets</span>,</div><div class="line">           <span class="symbol">:class_name</span> =&gt; <span class="string">'Tweet'</span>,</div><div class="line">           <span class="symbol">:foreign_key</span> =&gt; <span class="symbol">:tweet_id</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h3 id="加入_counter_cache_column">加入 counter_cache column</h3>
+<p>為了實現 <code>counter_cache</code>，要先用 migration 加入 <code>counter_cache</code> column（針對 <code>original tweet</code> 加上 <code>retweet_count</code>）：</p>
+<figure class="highlight"><figcaption><span>migration.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">class AddCountRetweets</div><div class="line">  self.up</div><div class="line">    add_column :tweets, :retweets_count, :integer, :default =&gt; <span class="number">0</span></div><div class="line">  end</div><div class="line">  <span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>一般的 counter_cache 會直接寫成：<code>belongs_to :model, :counter_cache =&gt; true</code>，但因為這邊的 <code>tweet</code> 有 self-referential relationship 的關係，所以要寫成：</p>
+<figure class="highlight"><figcaption><span>/app/models/tweet.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tweet</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  belongs_to <span class="symbol">:original_tweet</span>,</div><div class="line">             <span class="symbol">:class_name</span> =&gt; <span class="string">'Tweet'</span>,</div><div class="line">             <span class="symbol">:foreign_key</span> =&gt; <span class="symbol">:tweet_id</span>,</div><div class="line">             <span class="symbol">:counter_cache</span> =&gt; <span class="symbol">:retweets_count</span></div><div class="line"></div><div class="line">  has_many <span class="symbol">:retweets</span>,</div><div class="line">           <span class="symbol">:class_name</span> =&gt; <span class="string">'Tweet'</span>,</div><div class="line">           <span class="symbol">:foreign_key</span> =&gt; <span class="symbol">:tweet_id</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="整理">整理</h2>
+<p><code>length</code>、<code>count</code>、以及 <code>size</code> 分別在有無 counter_cache 的狀況如下：</p>
+<pre><code># without counter_cache
+.length   # pull all records then <span class="operator"><span class="keyword">call</span> .length
+.<span class="keyword">count</span>    # <span class="keyword">count</span> <span class="keyword">query</span>
+.<span class="keyword">size</span>     # <span class="keyword">count</span> <span class="keyword">query</span>
+
+# <span class="keyword">with</span> counter_cache
+.length   # pull <span class="keyword">all</span> records <span class="keyword">then</span> <span class="keyword">call</span> .length
+.<span class="keyword">count</span>    # <span class="keyword">count</span> <span class="keyword">query</span>
+.<span class="keyword">size</span>     # <span class="keyword">no</span> <span class="keyword">query</span>, look <span class="keyword">at</span> <span class="keyword">cache</span></span>
+</code></pre><p>這篇 <a href="http://blog.hasmanythrough.com/2008/2/27/count-length-size" target="_blank" rel="external">文章</a> 有進一步的敘述。</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/19/counter-cache/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/19/counter-cache/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/19/counter-cache/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/28/delegate/">
+        ← delegate
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/19/bi-mian-n-plus-1-queries/">
+        避免 N+1 queries →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

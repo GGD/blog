@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails 4 | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-05-30T13:22:00.000Z" itemprop="datePublished">
+          5月 30 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails 4</h1>
+    <section class="post-content">
+      <p>紀錄 Rails 3 to Rails 4 的一些改變。<br><a id="more"></a></p>
+<h2 id="MATCH_ROUTES">MATCH ROUTES</h2>
+<p>以往 Rails 3 的 <code>match</code> 寫法：<br>    match ‘/items/:id/purchase’, to: ‘items#purchase’<br>因為語意不清，不知道是 put、get、post 或 delete 等 HTTP method，且容易遭受 XSS 攻擊，因此在 Rails 4 會要求指定 HTTP method，否則就會造成 RuntimeError。<br>假設我們要指定 <code>post</code> HTTP method，就要寫成：<br>    post ‘/items/:id/purchase’, to: ‘items#purchase’<br>或是<br>    match ‘/items/:id/purchase’, to: ‘items#purchase’, via: :post<br>如果真的是要指定所有 HTTP method 的話，就寫成：<br>    match ‘/items/:id/purchase’, to: ‘items#purchase’, via: :all</p>
+<h2 id="PATCH_VERB">PATCH VERB</h2>
+<p>Rails 3 對應 update 動作的 HTTP method 只有 <code>PUT</code>。<code>PUT</code> 會傳遞整個 resource 來進行 update，但如果只想要 update resource 的某些 attribute，這樣就造成浪費了。<br>Rails 4 使用 <code>PATCH</code> 來解決此一需求。（在 HTTP 1.1 的時候就有這個 method 了）  </p>
+<p>可惜的是，並非所有瀏覽器都支援 <code>PATCH</code> method，Rails 4 提供了折衷辦法：  </p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">form_for(@item) do |f|</div><div class="line">  <span class="keyword">...</span></div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>會產生</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;form action=<span class="string">"/items/20"</span> <span class="keyword">method</span>=<span class="string">"post"</span>&gt;</div><div class="line">  &lt;<span class="keyword">div</span>&gt;</div><div class="line">    &lt;input name=<span class="string">"utf8"</span> <span class="keyword">type</span>=<span class="string">"hidden"</span> value=<span class="string">"&amp;#x2713;"</span> /&gt;</div><div class="line">    &lt;input name=<span class="string">"_method"</span> <span class="keyword">type</span>=<span class="string">"hidden"</span> value=<span class="string">"patch"</span> /&gt;</div><div class="line">  &lt;/<span class="keyword">div</span>&gt;</div><div class="line">&lt;/form&gt;</div></pre></td></tr></table></figure>
+
+<p>Rails 4 在 form 上面仍然使用 <code>post</code> method，但裡頭多了一個 hidden 來指定 <code>patch</code> method。這樣一來就能支援所有瀏覽器，而 Rails 自己也能根據 hidden field 的 value 瞭解到這是 <code>patch</code> method。  </p>
+<p>此外，在 test 當中也新增了 <code>patch</code> method：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">test <span class="string">"updates item with PATCH"</span> <span class="built_in">do</span></div><div class="line">  patch :update, id: @<span class="keyword">item</span>,</div><div class="line">    <span class="keyword">item</span>: { description: @<span class="keyword">item</span>.description }</div><div class="line">  assert_redirected_to item_url(@<span class="keyword">item</span>)</div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="CONCERNS">CONCERNS</h2>
+<p>在 route 裡頭有時候會遇到同樣的 resources 出現好幾次，比如：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">resources <span class="symbol">:messages</span> <span class="keyword">do</span></div><div class="line">  resources <span class="symbol">:comments</span></div><div class="line">  resources <span class="symbol">:categories</span></div><div class="line">  resources <span class="symbol">:tags</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">resources <span class="symbol">:posts</span> <span class="keyword">do</span></div><div class="line">  resources <span class="symbol">:comments</span></div><div class="line">  resources <span class="symbol">:categories</span></div><div class="line">  resources <span class="symbol">:tags</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">resources <span class="symbol">:items</span> <span class="keyword">do</span></div><div class="line">  resources <span class="symbol">:comments</span></div><div class="line">  resources <span class="symbol">:categories</span></div><div class="line">  resources <span class="symbol">:tags</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>遇到這種情形時，可以用 <code>concern</code> 包起來，並給定一個名字（sociable）以便維護：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">concern <span class="symbol">:sociable</span> <span class="keyword">do</span></div><div class="line">  resources <span class="symbol">:comments</span></div><div class="line">  resources <span class="symbol">:categories</span></div><div class="line">  resources <span class="symbol">:tags</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">resources <span class="symbol">:messages</span>, <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:posts</span>,    <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:items</span>,    <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div></pre></td></tr></table></figure>
+
+<p><code>concern</code> 也可以傳入參數，比如只要讓 sociable 可以在 items 底下 create：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">concern <span class="symbol">:sociable</span> <span class="keyword">do</span> |options|</div><div class="line">  resources <span class="symbol">:comments</span>, options</div><div class="line">  resources <span class="symbol">:categories</span>, options</div><div class="line">  resources <span class="symbol">:tags</span>, options</div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">resources <span class="symbol">:messages</span>, <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:posts</span>,    <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:items</span> <span class="keyword">do</span></div><div class="line">  concerns <span class="symbol">:sociable</span>, <span class="symbol">only:</span> <span class="symbol">:create</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p><code>concern</code> 甚至可以抽出來包成 object。要注意的是，這個 object 必須能夠 respond_to <code>call</code>：</p>
+<figure class="highlight"><figcaption><span>app/concerns/sociable.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Sociable</span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span><span class="keyword">self</span>.call(mapper, options)</div><div class="line">    mapper.resources <span class="symbol">:comments</span>, options</div><div class="line">    mapper.resources <span class="symbol">:categories</span>, options</div><div class="line">    mapper.resources <span class="symbol">:tags</span>, options</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">concern <span class="symbol">:sociable</span>, <span class="constant">Sociable</span></div><div class="line"></div><div class="line">resources <span class="symbol">:messages</span>, <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:posts</span>,    <span class="symbol">concerns:</span> <span class="symbol">:sociable</span></div><div class="line">resources <span class="symbol">:items</span> <span class="keyword">do</span></div><div class="line">  concerns <span class="symbol">:sociable</span>, <span class="symbol">only:</span> <span class="symbol">:create</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="TREAD-SAFETY">TREAD-SAFETY</h2>
+<p>在 Rails 3 當中，thread safety 預設是被關掉的：</p>
+<figure class="highlight"><figcaption><span>config/environments/production.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">MyApp::Application.configure <span class="built_in">do</span></div><div class="line">  <span class="comment"># Enable threaded mode</span></div><div class="line">  <span class="comment"># config.threadsafe!</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>而在 Rails 4 裡，thread safety 預設是打開的，上面兩個設定也被拿掉，並且另外加入了兩個設定：</p>
+<figure class="highlight"><figcaption><span>config/environments/production.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">MyApp::Application.configure <span class="built_in">do</span></div><div class="line">  config.cache_classes = <span class="constant">true</span></div><div class="line">  config.eager_load = <span class="constant">true</span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>第一個設定是確保 class 在兩個 requests 之間，不會被 reload，並確保 middleware stack 沒有包含 Rack::Lock，這樣一來，threads 就不會被 lock 住了。<br>另一個設定則是讓新的 threads 建立之前，所有的 code 都已經被 load 完畢以供我們使用。  </p>
+<p>為了盡可能讓 multi-threaded 表現更好，可以使用 <a href="http://puma.io/" target="_blank" rel="external">Puma</a>。<br>對於 multi-threaded server 的選擇，<a href="http://ruby-china.org/topics/10832" target="_blank" rel="external">這篇</a> 文章有不錯的講解。</p>
+<p>source: <a href="http://codeschool.com" target="_blank" rel="external">CodeSchool</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/05/30/rails-4/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/05/30/rails-4/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/05/30/rails-4/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/05/31/rails-4-2/">
+        ← Rails 4(2)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/03/07/rails-deploy-ji-chu-jiao-xue/">
+        Rails Deploy 基礎教學 →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

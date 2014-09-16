@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Model | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-21T06:01:00.000Z" itemprop="datePublished">
+          11月 21 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Model</h1>
+    <section class="post-content">
+      <p>Model 筆記。<br><a id="more"></a></p>
+<h2 id="Useful_Validates">Useful Validates</h2>
+<pre><code>validates_presence_of <span class="symbol">:status</span>
+validates_numericality_of <span class="symbol">:fingers</span>
+validates_uniqueness_of <span class="symbol">:toothmarks</span>
+validates_cofirmation_of <span class="symbol">:password</span>
+validates_acceptance_of <span class="symbol">:certification</span>
+validates_length_of <span class="symbol">:password</span>, <span class="symbol">minimum:</span> <span class="number">3</span>
+validates_format_of <span class="symbol">:email</span>, <span class="symbol">with:</span> /regex/i
+validates_inclusion_of <span class="symbol">:age</span>, <span class="symbol">in:</span> <span class="number">21</span>..<span class="number">99</span>
+validates_exclusion_of <span class="symbol">:age</span>, <span class="symbol">in:</span> <span class="number">0</span>..<span class="number">21</span>, <span class="symbol">message:</span> <span class="string">'Must be over 21.'</span>
+</code></pre><h2 id="Virtual_Attribute">Virtual Attribute</h2>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>virtual_attribute=(given_value)</div><div class="line"></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="Migration">Migration</h2>
+<h4 id="options">options</h4>
+<p>新增欄位時，常見的預設參數：<br>    default: <value><br>    limit: 30<br>    null: false<br>    first: true    # position<br>    after: email    #position<br>    unique: true</value></p>
+<h4 id="commands">commands</h4>
+<pre><code>rename_column <span class="symbol">:table</span>, <span class="symbol">:column</span>, <span class="symbol">:new_column</span>
+rename_table <span class="symbol">:table</span>, <span class="symbol">:new_table</span>
+drop_table <span class="symbol">:table</span>
+change_column <span class="symbol">:table</span>, <span class="symbol">:column</span>, <span class="symbol">:type</span>, options
+change_column_default <span class="symbol">:table</span>, <span class="symbol">:column</span>, <span class="symbol">default:</span> <span class="keyword">true</span>
+</code></pre><h4 id="db:setup">db:setup</h4>
+<pre><code>$ rake <span class="pseudo">db</span>:setup
+Creates <span class="pseudo">db</span>, loads schema, &amp; seed
+</code></pre><h2 id="Schema">Schema</h2>
+<pre><code>$ <span class="tag">rake</span> <span class="tag">db</span><span class="pseudo">:schema</span><span class="pseudo">:dump</span>
+</code></pre><p>會從 database 重新產生一份 schema</p>
+<h2 id="self">self</h2>
+<figure class="highlight"><figcaption><span>app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">class Zombie &lt; ActiveRecord::Base</div><div class="line">  scope :rotting, where(<span class="string">"age &gt; 5"</span>)</div><div class="line"></div><div class="line">  def make_rotting</div><div class="line">    <span class="keyword">if</span> age &gt; <span class="number">20</span> 	<span class="comment"># reading attributes doesn't need self</span></div><div class="line">      self.rotting = <span class="constant">true</span>	<span class="comment"># setting attributes needs "self."</span></div><div class="line">    <span class="function"><span class="keyword">end</span></span></div><div class="line">  <span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<h2 id="some_skill">some skill</h2>
+<pre><code>after_create <span class="symbol">:send_welcome_email</span>
+before_save <span class="symbol">:encrypt_password</span>
+before destroy <span class="symbol">:set_deleted_flag</span>    <span class="comment"># 在 `deleted` colomn 填上 datetime 並 return false，這樣就不會真的刪除</span>
+</code></pre>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/21/model/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/21/model/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/21/model/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/21/view/">
+        ← View
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/20/rspec-6/">
+        Rspec(6) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

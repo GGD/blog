@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Include vs Joins | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-09-26T07:28:00.000Z" itemprop="datePublished">
+          9月 26 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Include vs Joins</h1>
+    <section class="post-content">
+      <p>在 find method 當中，:include 與 :joins 常常會混淆使用，因此將這兩個使用時機記錄下來。<br><a id="more"></a></p>
+<p>假設現在有兩個 models：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:comments</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Comment</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  belongs_to <span class="symbol">:user</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>而 index 頁面的 action 則是：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@comments</span> = <span class="constant">Comment</span>.all(<span class="symbol">:order</span> =&gt; <span class="string">"comments.created_at desc"</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+
+<p>如果現在想要撈出管理者身份的 user 所發出的文章，且在 <code>Comments</code> 用 find method 以一條 query 就解決的話，該用 <code>joins</code> 還是 <code>include</code>？  </p>
+<p>先用 <code>joins</code> 試試：</p>
+<pre><code>&gt;&gt; c = Comment.all(:joins =&gt; :user, :conditions =&gt; { :users =&gt; { :admin =&gt; true } })
+<span class="header">    Comment Load (1.2ms)   SELECT "comments".* FROM "comments" INNER JOIN "users" ON "users".id = "comments".user_id WHERE ("users"."admin" = 't') 
++----+-----------------------+---------+-----------------------+-----------------------+</span>
+<span class="header">| id | content               | user_id | created_at            | updated_at            |
++----+-----------------------+---------+-----------------------+-----------------------+</span>
+| 3  | Some people, when ... | 1       | 2009-09-28 19:00:3... | 2009-09-28 19:00:3... |
+| 5  | Write the code as ... | 2       | 2009-09-28 19:44:0... | 2009-09-28 19:44:0... |
+| 6  | Walking on water a... | 1       | 2009-09-28 19:46:2... | 2009-09-28 19:46:2... |
+<span class="header">| 8  | It should be noted... | 2       | 2009-09-28 19:49:3... | 2009-09-28 19:49:3... |
++----+-----------------------+---------+-----------------------+-----------------------+</span>
+4 rows in set
+</code></pre><p>結果只撈出了 comments 資料表中的 attributes。由於上述結果並沒有包含任何的 user attributes，想要再更進一步得知第一個 content 的 user 資訊時，就必須再下一次 query：</p>
+<pre><code>&gt;&gt; c.first.user
+<span class="header">    User Load (0.3ms)   SELECT * FROM "users" WHERE ("users"."id" = 1) 
++----+--------+-------+-------------------------+-------------------------+</span>
+<span class="header">| id | name   | admin | created_at              | updated_at              |
++----+--------+-------+-------------------------+-------------------------+</span>
+<span class="header">| 1  | Eifion | true  | 2009-09-28 18:51:53 UTC | 2009-09-28 18:51:53 UTC |
++----+--------+-------+-------------------------+-------------------------+</span>
+1 row in set
+</code></pre><p>接著改用 <code>include</code> 試試：</p>
+<pre><code>&gt;&gt; c = Comment.all(:include =&gt; :user, :conditions =&gt; { :users =&gt; { :admin =&gt; true } })
+    Comment Load Including Associations (<span class="number">0.</span>7ms)   SELECT <span class="string">"comments"</span>.<span class="string">"id"</span> AS t0_r0, <span class="string">"comments"</span>.<span class="string">"content"</span> AS t0_r1, <span class="string">"comments"</span>.<span class="string">"user_id"</span> AS t0_r2, <span class="string">"comments"</span>.<span class="string">"created_at"</span> AS t0_r3, <span class="string">"comments"</span>.<span class="string">"updated_at"</span> AS t0_r4, <span class="string">"users"</span>.<span class="string">"id"</span> AS t1_r0, <span class="string">"users"</span>.<span class="string">"name"</span> AS t1_r1, <span class="string">"users"</span>.<span class="string">"admin"</span> AS t1_r2, <span class="string">"users"</span>.<span class="string">"created_at"</span> AS t1_r3, <span class="string">"users"</span>.<span class="string">"updated_at"</span> AS t1_r4 FROM <span class="string">"comments"</span> LEFT OUTER JOIN <span class="string">"users"</span> ON <span class="string">"users"</span>.id = <span class="string">"comments"</span>.user_id WHERE (<span class="string">"users"</span>.<span class="string">"admin"</span> = <span class="string">'t'</span>) 
++----+-----------------------+---------+-----------------------+-----------------------+
+| id | content               | user_id | created_at            | updated_at            |
++----+-----------------------+---------+-----------------------+-----------------------+
+| <span class="number">3</span>  | Some people, when <span class="keyword">...</span> | <span class="number">1</span>       | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">00</span>:<span class="number">3.</span>.. | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">00</span>:<span class="number">3.</span>.. |
+| <span class="number">5</span>  | Write the code as <span class="keyword">...</span> | <span class="number">2</span>       | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">44</span>:<span class="number">0.</span>.. | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">44</span>:<span class="number">0.</span>.. |
+| <span class="number">6</span>  | Walking on water a... | <span class="number">1</span>       | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">46</span>:<span class="number">2.</span>.. | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">46</span>:<span class="number">2.</span>.. |
+| <span class="number">8</span>  | It should be noted... | <span class="number">2</span>       | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">49</span>:<span class="number">3.</span>.. | <span class="number">2009</span>-<span class="number">09</span>-<span class="number">28</span> <span class="number">19</span>:<span class="number">49</span>:<span class="number">3.</span>.. |
++----+-----------------------+---------+-----------------------+-----------------------+
+<span class="number">4</span> rows <span class="keyword">in</span> set
+</code></pre><p>這次的 query 就複雜多了，而且會把 comments 與 users 資料表的欄位都 SELECT 起來。由此已經把 <code>User</code> model 先存到記憶體當中，因此這次再叫出第一個 comment 的 user 資訊時，就不會多下一次 query了：</p>
+<pre><code><span class="header">&gt;&gt; c.first.user
++----+--------+-------+-------------------------+-------------------------+</span>
+<span class="header">| id | name   | admin | created_at              | updated_at              |
++----+--------+-------+-------------------------+-------------------------+</span>
+<span class="header">| 1  | Eifion | true  | 2009-09-28 18:51:53 UTC | 2009-09-28 18:51:53 UTC |
++----+--------+-------+-------------------------+-------------------------+</span>
+1 row in set
+</code></pre><h4 id="Comments_index_頁面">Comments index 頁面</h4>
+<p>假設 comments index 頁面想同時顯示各個 comment 的 user，那該用 <code>include</code> 還是 <code>joins</code>？<br>這個答案應該根據另一種問法而定：「是否需要其他 model 的 attributes？」<br>如果是，那就應該使用 <code>include</code>；反之，則用 <code>joins</code>。<br>於是再將剛剛的 index action 改寫（這段落落長的 <code>find</code> 可以再另外包成一個 scope）：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">  <span class="variable">@comments</span> = <span class="constant">Comment</span>.all(<span class="symbol">:include</span> =&gt; <span class="symbol">:user</span>, <span class="symbol">:conditions</span> =&gt; { <span class="symbol">:users</span> =&gt; { <span class="symbol">:admin</span> =&gt; <span class="keyword">true</span>} }, <span class="symbol">:order</span> =&gt; <span class="string">"comments.created_at desc"</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>#### 其他例子<br>從剛剛的例子來看，使用 <code>include</code> 會產生下述 SQL 指令：<br>    SELECT “comments”.”id” AS t0_r0, “comments”.”content” AS t0_r1, “comments”.”user_id” AS t0_r2, “comments”.”created_at” AS t0_r3, “comments”.”updated_at” AS t0_r4, “users”.”id” AS t1_r0, “users”.”name” AS t1_r1, “users”.”admin” AS t1_r2, “users”.”created_at” AS t1_r3, “users”.”updated_at” AS t1_r4 FROM “comments” LEFT OUTER JOIN “users” ON “users”.id = “comments”.user_id WHERE (“users”.”admin” = ‘t’)<br>從這段 SQL 來看，可知道 <code>include</code> 會把 commments 與 users 資料表所有的欄位都抓出來。因此如果要在 <code>find</code> 底下加入 <code>select</code> ，此時就不適合用 <code>include</code> ，而應該用 <code>joins</code> 了。<br>何時會遇到這種狀況呢？比如在 user 的 index 頁面當中，要列出各個 user 的 comment 數量時，就應該使用 <code>joins</code>。<br>下列是 index view 中，要計算 comment 數量的片段：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="variable">%=</span> pluralize user.comments.count, <span class="string">"comment"</span> <span class="variable">%&gt;</span></div></pre></td></tr></table></figure><br>這段 code 會在每個 user 出現的時候都 query 一次，其實不甚理想。應該要改成在 query users 的同時，也一併完成，作法是使用 <code>joins</code> 並加入 <code>select</code> 選項。<br>    &gt;&gt; User.all(:joins =&gt; :comments, :select =&gt; “users.<em>, count(comments.id) as comments_count”, :group =&gt; “users.id”)<br>    User Load (1.3ms)   SELECT users.</em>, count(comments.id) as comments_count FROM “users” INNER JOIN “comments” ON comments.user_id = users.id GROUP BY users.id<br>    +——+————+———-+—————————+—————————+————————+<br>    | id | name   | admin | created_at       | updated_at       | comments_count |<br>    +——+————+———-+—————————+—————————+————————+<br>    | 1  | Eifion | true  | 2009-09-28 18… | 2009-09-28 18… | 2              |<br>    | 2  | Susan  | true  | 2009-09-28 18… | 2009-09-28 18… | 2              |<br>    | 3  | Paul   | false | 2009-09-28 18… | 2009-09-28 18… | 3              |<br>    | 4  | John   | false | 2009-09-28 18… | 2009-09-28 18… | 1              |<br>    +——+————+———-+—————————+—————————+————————+<br>    4 rows in set<br>這樣就可以用一個 query 就同時取得 users 以及 comment 數量的資訊了。<br>為了完成此一 query，還必須要把 index action 中的 <code>User.all</code> 改成 <code>find</code>：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>index</div><div class="line">	<span class="variable">@users</span> = <span class="constant">User</span>.all(<span class="symbol">:joins</span> =&gt; <span class="symbol">:comments</span>, <span class="symbol">:select</span> =&gt; <span class="string">"users.*, count(comments.id) as comments_count"</span>, <span class="symbol">:group</span> =&gt; <span class="string">"users.id"</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>然後再把剛剛的 index view 改成：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;<span class="variable">%=</span> pluralize user.comments_count, <span class="string">"comment"</span> <span class="variable">%&gt;</span></div></pre></td></tr></table></figure><br>這樣一來，就可以一次取得想要的資訊了。<br>#### Joins 的其他例子<br>把剛剛的 models 再加上 <code>Group</code> 及 <code>Membership</code>：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Group</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:memberships</span></div><div class="line">  has_many <span class="symbol">:users</span>, <span class="symbol">:through</span> =&gt; <span class="symbol">:memberships</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Membership</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  belongs_to <span class="symbol">:user</span></div><div class="line">  belongs_to <span class="symbol">:group</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:memberships</span></div><div class="line">  has_many <span class="symbol">:groups</span>, <span class="symbol">:through</span> =&gt; <span class="symbol">:memberships</span></div><div class="line">  has_many <span class="symbol">:comments</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Comment</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  belongs_to <span class="symbol">:user</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><code>User</code> 與 <code>Group</code> 會透過 <code>Membership</code> 產生 many-to-many relationship。<br>現在想要抓出特定的 group 中，各 user 的 comment，理想的作法是這樣：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Group</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:membership</span></div><div class="line">  has_many <span class="symbol">:users</span>, <span class="symbol">:through</span> =&gt; <span class="symbol">:memberships</span></div><div class="line">  has_many <span class="symbol">:comments</span>, <span class="symbol">:through</span> =&gt; <span class="symbol">:users</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>但 Ruby 不支援 nested <code>has_many :through</code>，因此改用 <code>joins</code> 來完成。<br>首先要先取出 Group：<br>    &gt;&gt; g = Group.first<br>      Group Load (0.4ms)   SELECT <em> FROM “groups” LIMIT 1<br>    +——+—————————+————————————-+————————————-+<br>    | id | name             | created_at              | updated_at              |<br>    +——+—————————+————————————-+————————————-+<br>    | 1  | Musician’s Guild | 2009-10-01 20:09:11 UTC | 2009-10-01 20:09:11 UTC |<br>    +——+—————————+————————————-+————————————-+<br>    1 row in set<br>接著要取出該 group 裡頭各成員的 comments，可以 join users 與 memberships 資料表來達成：<br>    &gt;&gt; Comment.all(:joins =&gt; { :user =&gt; :memberships }, :conditions =&gt; { :memberships =&gt; { :group_id =&gt; g.id } } )<br>      Comment Load (0.7ms)   SELECT “comments”.</em> FROM “comments”<br>    INNER JOIN “users” ON “users”.id = “comments”.user_id<br>    INNER JOIN “memberships” ON memberships.user_id = users.id<br>    WHERE (“memberships”.”group_id” = 1)<br>    +——+——————————+————-+——————————+——————————+<br>    | id | content            | user_id | created_at         | updated_at         |<br>    +——+——————————+————-+——————————+——————————+<br>    | 1  | I have always w… | 3       | 2009-09-28 18:5… | 2009-09-28 18:5… |<br>    | 3  | Some people, wh… | 1       | 2009-09-28 19:0… | 2009-09-28 19:0… |<br>    | 4  | Java is to Java… | 3       | 2009-09-28 19:0… | 2009-09-28 19:0… |<br>    | 5  | Write the code … | 2       | 2009-09-28 19:4… | 2009-09-28 19:4… |<br>    | 6  | Walking on wate… | 1       | 2009-09-28 19:4… | 2009-09-28 19:4… |<br>    | 7  | Never trust a c… | 3       | 2009-09-28 19:4… | 2009-09-28 19:4… |<br>    | 8  | It should be no… | 2       | 2009-09-28 19:4… | 2009-09-28 19:4… |<br>    +——+——————————+————-+——————————+——————————+<br>    7 rows in set<br>上面那段 query 可以移到 <code>Group</code> model 中：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Group</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  has_many <span class="symbol">:memberships</span></div><div class="line">  has_many <span class="symbol">:users</span>, <span class="symbol">:through</span> =&gt; <span class="symbol">:memberships</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>comments</div><div class="line">    <span class="constant">Comment</span>.all(<span class="symbol">:joins</span> =&gt; { <span class="symbol">:user</span> =&gt; <span class="symbol">:memberships</span>}, <span class="symbol">:conditions</span> =&gt; { <span class="symbol">:memberships</span> =&gt; { <span class="symbol">:group_id</span> =&gt; id } } )</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>這樣一來，view 就可以簡潔地抓出該 group 的 comments。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">h2</span>&gt;</span>Comments<span class="tag">&lt;/<span class="title">h2</span>&gt;</span></div><div class="line"><span class="vbscript">&lt;%= render @group.comments %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>上面的 comments method 可以用 <code>scoped</code> 來取代 <code>all</code>，<code>scoped</code> 可視為是動態的 scope，其好處是可以在後面一直加上新的 limit。</p>
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/09/26/include-vs-joins/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/09/26/include-vs-joins/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/09/26/include-vs-joins/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/10/08/active-record/">
+        ← Active Record
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/09/19/pry/">
+        Pry →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

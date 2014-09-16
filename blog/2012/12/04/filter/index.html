@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>filter | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-12-04T08:41:00.000Z" itemprop="datePublished">
+          12月 4 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">filter</h1>
+    <section class="post-content">
+      <p>filter 筆記。<br><a id="more"></a></p>
+<h2 id="before_filter_使用時機">before_filter 使用時機</h2>
+<p>在一般情況下，通常 <code>edit</code>、<code>udate</code>、<code>destroy</code> 會寫成像這樣：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">class TweetsController &lt; ApplicationController</div><div class="line">	def edit</div><div class="line">		@tweet = Tweet.find(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def update</div><div class="line">		@tweet = Tweet.find(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def destroy</div><div class="line">		@tweet = Tweet.find(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>然後為了 DRY，通常都會包成 <code>before_filter</code>：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">class TweetsController &lt; ApplicationController</div><div class="line">	before_filter :get_tweet, :only =&gt; [:edit, :update, :destroy]</div><div class="line"></div><div class="line">	def edit</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def update</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def destroy</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	private</div><div class="line">	def get_tweet</div><div class="line">		@tweet = Tweet.find(params[:id])</div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>但是有一派的人認為，instant variable 應該要放在 <code>action</code> 裡面，而不是用 <code>private</code> 把它藏起來，而且也容易忘記它的存在。<br>為了解決此一窘境，因此改為：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">class TweetsController &lt; ApplicationController</div><div class="line">	before_filter :get_tweet, :only =&gt; [:edit, :update, :destroy]</div><div class="line"></div><div class="line">	def edit</div><div class="line">		@tweet = get_tweet</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def update</div><div class="line">		@tweet = get_tweet</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def destroy</div><div class="line">		@tweet = get_tweet</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	private</div><div class="line">	def get_tweet</div><div class="line">		Tweet.find(params[:id])</div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>寫完之後會發現 <code>params[:id]</code> 應該只出現在 <code>action</code> 裡面會比較恰當…</p>
+<figure class="highlight"><figcaption><span>/app/controllers/tweets_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">class TweetsController &lt; ApplicationController</div><div class="line">	before_filter :get_tweet, :only =&gt; [:edit, :update, :destroy]</div><div class="line"></div><div class="line">	def edit</div><div class="line">		@tweet = get_tweet(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def update</div><div class="line">		@tweet = get_tweet(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	def destroy</div><div class="line">		@tweet = get_tweet(params[:id])</div><div class="line">		<span class="keyword">...</span></div><div class="line">	end</div><div class="line"></div><div class="line">	private</div><div class="line">	def get_tweet(tweet_id)</div><div class="line">		Tweet.find(tweet_id)</div><div class="line">	end</div><div class="line">end</div></pre></td></tr></table></figure>
+
+<p>如果是簡單的 app，那大可寫成 <code>Tweet.find(params[:id])</code> 就好；<br>但如果 app 很複雜，這樣的寫法會有助於測試。（目前還沒體會到這項好處就是…）</p>
+<h2 id="哪些情境適合_filter">哪些情境適合 filter</h2>
+<p>剛剛的 <code>filter</code> 使用時機或許有些爭議，但如果是以下這些情境的話，使用 <code>filter</code> 的確可以幫助程式更加 DRY：<br>Authorization<br>Logging<br>Wizards  # 比如說 Step:1, Step:2…  </p>
+<h3 id="Logging">Logging</h3>
+<p>Logging filter 通常會放在 <code>ApplicationController</code> 底下：<br>    class ApplicationController::ActionController::Base<br>        before_filter :require_login</p>
+<p>但是記得要 skip 掉登入頁面：<br>    class SessionsController &lt; ApplicationController<br>        skip_before_filter :require_login, :only =&gt; [:new, :create]</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/12/04/filter/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/12/04/filter/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/12/04/filter/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/12/05/nested-attributes/">
+        ← nested attributes
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/12/04/scope/">
+        scope →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

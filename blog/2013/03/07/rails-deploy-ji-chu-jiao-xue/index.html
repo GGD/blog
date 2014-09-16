@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails Deploy 基礎教學 | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-03-07T02:49:00.000Z" itemprop="datePublished">
+          3月 7 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails Deploy 基礎教學</h1>
+    <section class="post-content">
+      <p>Using nginx, Unicorn, MySQL, rbenv and Capistrano.<br><a id="more"></a></p>
+<h2 id="設置主機環境">設置主機環境</h2>
+<p>這邊的主機是以 linode 的 Ubuntu 12.04 LTS 64bit 作示範。  </p>
+<p>一開始先用 ssh 連到主機：</p>
+<pre><code><span class="variable">$ </span>ssh root<span class="variable">@xxx</span>.xxx.xxx.xxx  <span class="comment"># xxx 為主機的 ip</span>
+</code></pre><p>進去之後，目前的身份會是 <code>root</code>。</p>
+<p>接著將系統的套件升級：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get update</span>
+</code></pre><p>然後安裝必要套件：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get -y install curl git-core python-software-properties</span>
+</code></pre><h3 id="安裝_nginx">安裝 nginx</h3>
+<p>再來要安裝 nginx，我們可以用 <code>apt-get</code> 的方式來安裝 nginx，但是這樣版本會過舊。<br>為了避免版本過舊，我們可以新增一個新的 repository（版本會是比較近期的）：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># add-apt-repository ppa:nginx/stable</span>
+</code></pre><p>接著再輸入以下指令，就可以使用 <code>apt-get</code> 的方式來安裝 nginx：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get update</span>
+root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get -y install nginx</span>
+</code></pre><p>安裝完畢之後，就可以啓動 nginx 了：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># service nginx start</span>
+<span class="constant">Starting</span> <span class="symbol">nginx:</span> nginx.
+</code></pre><p>我們可以在瀏覽器輸入主機的 ip，這時候可以看到畫面顯示：<code>Welcome to nginx!</code>，就表示成功啓動 nginx 了。<br>（如果有出現 <code>nginx: [emerg] bind() to [::]:80 failed (98: Address already in use)</code> 錯誤的話，請看文章最底下 <code>nginx binding issue</code>。）</p>
+<h3 id="安裝_MySQL">安裝 MySQL</h3>
+<p>輸入以下指令來安裝 MySQL：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get install -y mysql-server libmysqlclient-dev</span>
+</code></pre><p>過程中會要求輸入身份為 <code>root</code> 的 MySQL 密碼。  </p>
+<p>安裝完成之後，要進入 mySQL 設定個別權限：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># mysql -u root -p</span>
+<span class="constant">Enter</span> <span class="symbol">password:</span>
+</code></pre><p>接著針對我們的 Rails application 建立 <code>demo</code> user以及 database：</p>
+<pre><code><span class="input"><span class="prompt">mysql&gt;</span> create user demo<span class="variable">@localhost</span> identified by <span class="string">'secret'</span>;
+<span class="constant">Query</span> <span class="constant">OK</span>, <span class="number">0</span> rows affected (<span class="number">0</span>.<span class="number">01</span> sec)</span>
+<span class="input"><span class="prompt">mysql&gt;</span> create database demo_production;
+<span class="constant">Query</span> <span class="constant">OK</span>, <span class="number">0</span> rows affected (<span class="number">0</span>.<span class="number">01</span> sec)</span>
+<span class="input"><span class="prompt">mysql&gt;</span> grant all privileges on demo_production.* to demo<span class="variable">@localhost</span></span>
+<span class="input"><span class="prompt">Query OK, 0 rows affected (0.01 sec)
+mysql&gt;</span> exit</span>
+</code></pre><h3 id="安裝_Postfix_and_Node-js">安裝 Postfix and Node.js</h3>
+<p>如果要讓 application 能夠寄信，可以安裝 Postfix：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get install -y postfix</span>
+</code></pre><p>過程中選擇預設的 “Internet Site” 以及預設的 “System mail name” 即可。  </p>
+<p>接著安裝 node.js。這樣一來，主機就可以執行 Javascript 來協助處理 application 中的 asset pipeline。</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># add-apt-repository ppa:chris-lea/node.js</span>
+root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get update</span>
+root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># apt-get -y install nodejs</span>
+</code></pre><h3 id="安裝_Ruby">安裝 Ruby</h3>
+<p>在安裝 Ruby 之前，我們先建立一個新的 user 叫做 <code>deployer</code>（先前都是以 <code>root</code> 的身份執行）。<br>首先建立一個 group 名為 <code>admin</code>，接著把 <code>root</code> 拉進去：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># groupadd admin</span>
+root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># usermod -g admin root</span>
+</code></pre><p>然後新增 <code>deployer</code> user，並將其加到 <code>admin</code> group 裡面，這樣一來，<code>deployer</code> 就有了 sudo 的權限：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># adduser deployer --ingroup admin</span>
+</code></pre><p>過程中會要你輸入 <code>deployer</code> 的密碼，其他設定則是保留預設值。<br>接著把身份換到 <code>deployer</code>，並跳到 home 資料夾：</p>
+<pre><code>root<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="comment"># su deployer</span>
+<span class="constant">To </span>run a command as administrator (user <span class="string">"root"</span>), <span class="keyword">use</span> <span class="string">"sudo &lt;command&gt;"</span>.
+<span class="constant">See </span><span class="string">"man sudo_root"</span> <span class="keyword">for</span> details.
+
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:/root</span><span class="variable">$ </span>cd ~
+</code></pre><p>這邊使用 <a href="https://github.com/fesplugas/rbenv-installer" target="_blank" rel="external">rbenv-installer</a> 來安裝 ruby，手續會比較簡便。  </p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>curl -<span class="constant">L</span> <span class="symbol">https:</span>/<span class="regexp">/raw.github.com/fesplugas</span><span class="regexp">/rbenv-installer/master</span><span class="regexp">/bin/rbenv</span>-installer | bash
+</code></pre><p>安裝過程最後會出現一段 code（code 可能會因主機不同而有差異），要把這段加到 <code>.bashrc</code> 檔案當中：</p>
+<pre><code><span class="keyword">export</span> RBENV_ROOT=<span class="string">"<span class="variable">${HOME}</span>/.rbenv"</span>
+
+<span class="keyword">if</span> [ <span class="operator">-d</span> <span class="string">"<span class="variable">${RBENV_ROOT}</span>"</span> ]; <span class="keyword">then</span>
+  <span class="keyword">export</span> PATH=<span class="string">"<span class="variable">${RBENV_ROOT}</span>/bin:<span class="variable">${PATH}</span>"</span>
+  <span class="built_in">eval</span> <span class="string">"<span class="variable">$(rbenv init -)</span>"</span>
+<span class="keyword">fi</span>
+</code></pre><p>接下來用 Vim 打開 <code>.bashrc</code> 檔：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>vim ~<span class="regexp">/.bashrc</span>
+</code></pre><p>然後找到其中一段：</p>
+<figure class="highlight"><figcaption><span>~/.bashrc</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># If not running interactively, don't do anything</span></div><div class="line">[ -z <span class="string">"<span class="variable">$PS1</span>"</span> ] &amp;&amp; <span class="keyword">return</span></div></pre></td></tr></table></figure>
+
+<p>這段的意思是如果不在 interactive shell 狀態就停止執行，因此我們要在這之前就先讀進 rbenv 才可以使用 Capistano。  </p>
+<p>把剛剛 rbenv-installer 安裝程序最後出現的 code 加到這段上面：</p>
+<figure class="highlight"><figcaption><span>~/.bashrc</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">export</span> RBENV_ROOT=<span class="string">"<span class="variable">${HOME}</span>/.rbenv"</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> [ <span class="operator">-d</span> <span class="string">"<span class="variable">${RBENV_ROOT}</span>"</span> ]; <span class="keyword">then</span></div><div class="line">  <span class="keyword">export</span> PATH=<span class="string">"<span class="variable">${RBENV_ROOT}</span>/bin:<span class="variable">${PATH}</span>"</span></div><div class="line">  <span class="built_in">eval</span> <span class="string">"<span class="variable">$(rbenv init -)</span>"</span></div><div class="line"><span class="keyword">fi</span></div><div class="line"></div><div class="line"><span class="comment"># If not running interactively, don't do anything</span></div><div class="line">[ -z <span class="string">"<span class="variable">$PS1</span>"</span> ] &amp;&amp; <span class="keyword">return</span></div></pre></td></tr></table></figure>
+
+<p>將 <code>.bashrc</code> 存檔了之後，要再 reload 一次：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>. ~<span class="regexp">/.bashrc</span>
+</code></pre><p>這樣一來，就可以使用 <code>rbenv</code> command 了。我們接著輸入以下指令，它會安裝 Ruby 相依的 packages：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>rbenv bootstrap-ubuntu-<span class="number">12</span>-<span class="number">04</span>
+</code></pre><p>再來根據 <a href="https://github.com/fesplugas/rbenv-installer" target="_blank" rel="external">rbenv-installer</a> 安裝最新版的 Ruby：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>rbenv install <span class="number">1.9</span>.<span class="number">3</span>-p374
+</code></pre><p>經過大概一碗泡麵的時間就可以安裝完成。接著將其設定為預設的 Ruby 版本：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>rbenv global <span class="number">1.9</span>.<span class="number">3</span>-p374
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>ruby -v
+ruby <span class="number">1.9</span>.<span class="number">3</span>p374 (<span class="number">2013</span>-<span class="number">01</span>-<span class="number">15</span> revision <span class="number">38858</span>) [x86_64-linux]
+</code></pre><p>最後要安裝 Bundler，然後執行 <code>rbenv rehash</code> 就可以使用 <code>bundle</code> command 了：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>gem install bundler --no-ri --no-rdoc
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>rbenv rehash
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>bundle -v
+<span class="constant">Bundler</span> version <span class="number">1.2</span>.<span class="number">4</span>
+</code></pre><h2 id="Application_設定">Application 設定</h2>
+<p>現在回到我們的電腦上面，這邊假設我們的 application 已經有對應到 Github 上面的 repository，僅針對部分需要注意的地方稍微提一下。  </p>
+<h4 id="ignore_database-yml">ignore database.yml</h4>
+<p>我們會將 database 的帳號密碼放在 <code>database.yml</code> 底下，為了避免在 Github 上面公開，因此應該把 <code>database.yml</code> 加到 <code>.gitignore</code> 當中，並且在主機上面手動設定 <code>database.yml</code> 檔。</p>
+<figure class="highlight"><figcaption><span>/.gitignore</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"># See http://<span class="operator"><span class="keyword">help</span>.github.com/<span class="keyword">ignore</span>-files/ <span class="keyword">for</span> more about ignoring files.</span></div><div class="line">#</div><div class="line"># <span class="keyword">If</span> you find yourself ignoring <span class="keyword">temporary</span> files generated <span class="keyword">by</span> your <span class="built_in">text</span> editor</div><div class="line"># <span class="keyword">or</span> operating system, you probably want <span class="keyword">to</span> <span class="keyword">add</span> a <span class="keyword">global</span> <span class="keyword">ignore</span> instead:</div><div class="line">#   git config <span class="comment">--global core.excludesfile ~/.gitignore_global</span></div><div class="line"></div><div class="line"># <span class="keyword">Ignore</span> bundler config</div><div class="line">/.bundle</div><div class="line"></div><div class="line"># <span class="keyword">Ignore</span> the <span class="keyword">default</span> SQLite <span class="keyword">database</span>.</div><div class="line">/db<span class="comment">/*.sqlite3</span></div><div class="line"></div><div class="line"># Ignore all logfiles and tempfiles.</div><div class="line">/log/*.log</div><div class="line">/tmp</div><div class="line"></div><div class="line">/config/database.yml</div></pre></td></tr></table></figure>
+
+<p>為了方便在主機上面手動設定 <code>database.yml</code>，我們可以先複製一份範本，之後再拿來改：</p>
+<pre><code>$ <span class="keyword">cp</span> config/database.yml config/database.example.yml
+</code></pre><h2 id="Deploy_with_Capistrano">Deploy with Capistrano</h2>
+<p>這邊會使用 Capistrano 來進行 deploy。此外還會用到 Unicorn，因此我們要在 <code>Gemfile</code> 加上這兩個 gem：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"># <span class="operator"><span class="keyword">Use</span> unicorn <span class="keyword">as</span> the app <span class="keyword">server</span></span></div><div class="line">gem <span class="string">'unicorn'</span></div><div class="line"></div><div class="line"># Deploy <span class="keyword">with</span> Capistrano</div><div class="line">gem <span class="string">'capistrano'</span></div></pre></td></tr></table></figure>
+
+<p>記得要再執行 <code>bundle</code> 來安裝。  </p>
+<p>接著執行 <code>capify .</code> 來設定 Capistrano，這個指令會產生兩個設定檔：</p>
+<pre><code>$ capify .
+[<span class="built_in">add</span>] writing <span class="string">'./Capfile'</span>
+[<span class="built_in">add</span>] writing <span class="string">'./config/deploy.rb'</span>
+[done] capified!
+</code></pre><p>首先看到 <code>Capfile</code> 檔，第二行告訴我們如果使用 asset pipeline 的話就要反註解，而我們也的確會用到：</p>
+<figure class="highlight"><figcaption><span>/Capfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">load</span> <span class="string">'deploy'</span></div><div class="line"><span class="comment"># Uncomment if you are using Rails' asset pipeline</span></div><div class="line"><span class="built_in">load</span> <span class="string">'deploy/assets'</span></div><div class="line"><span class="built_in">load</span> <span class="string">'config/deploy'</span> <span class="comment"># remove this line to skip loading any of the default tasks</span></div></pre></td></tr></table></figure>
+
+<p>接下來看到 <code>deploy.rb</code> 檔，當中會有許多個人化的設定，因此這邊只會貼出幾項必要設定：</p>
+<figure class="highlight"><figcaption><span>/config/deploy.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">require</span> <span class="string">"bundler/capistrano"</span></div><div class="line"></div><div class="line">server <span class="string">"xxx.xxx.xxx.xxx"</span>, <span class="symbol">:web</span>, <span class="symbol">:app</span>, <span class="symbol">:db</span>, <span class="symbol">primary:</span> <span class="keyword">true</span></div><div class="line"></div><div class="line">set <span class="symbol">:application</span>, <span class="string">"demo"</span></div><div class="line">set <span class="symbol">:user</span>, <span class="string">"deployer"</span></div><div class="line">set <span class="symbol">:deploy_to</span>, <span class="string">"/home/<span class="subst">#{user}</span>/apps/<span class="subst">#{application}</span>"</span></div><div class="line">set <span class="symbol">:deploy_via</span>, <span class="symbol">:remote_cache</span></div><div class="line">set <span class="symbol">:use_sudo</span>, <span class="keyword">false</span></div><div class="line"></div><div class="line">set <span class="symbol">:scm</span>, <span class="string">"git"</span></div><div class="line">set <span class="symbol">:repository</span>, <span class="string">"git@github.com:GGD/<span class="subst">#{application}</span>.git"</span></div><div class="line">set <span class="symbol">:branch</span>, <span class="string">"master"</span></div><div class="line"></div><div class="line">default_run_options[<span class="symbol">:pty</span>] = <span class="keyword">true</span></div><div class="line">ssh_options[<span class="symbol">:forward_agent</span>] = <span class="keyword">true</span></div><div class="line"></div><div class="line">after <span class="string">"deploy"</span>, <span class="string">"deploy:cleanup"</span> <span class="comment"># keep only the last 5 releases</span></div><div class="line"></div><div class="line">namespace <span class="symbol">:deploy</span> <span class="keyword">do</span></div><div class="line">  <span class="string">%w[start stop restart]</span>.each <span class="keyword">do</span> |command|</div><div class="line">    desc <span class="string">"<span class="subst">#{command}</span> unicorn server"</span></div><div class="line">    task command, <span class="symbol">roles:</span> <span class="symbol">:app</span>, <span class="symbol">except:</span> {<span class="symbol">no_release:</span> <span class="keyword">true</span>} <span class="keyword">do</span></div><div class="line">      run <span class="string">"/etc/init.d/unicorn_<span class="subst">#{application}</span> <span class="subst">#{command}</span>"</span></div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  task <span class="symbol">:setup_config</span>, <span class="symbol">roles:</span> <span class="symbol">:app</span> <span class="keyword">do</span></div><div class="line">    sudo <span class="string">"ln -nfs <span class="subst">#{current_path}</span>/config/nginx.conf /etc/nginx/sites-enabled/<span class="subst">#{application}</span>"</span></div><div class="line">    sudo <span class="string">"ln -nfs <span class="subst">#{current_path}</span>/config/unicorn_init.sh /etc/init.d/unicorn_<span class="subst">#{application}</span>"</span></div><div class="line">    run <span class="string">"mkdir -p <span class="subst">#{shared_path}</span>/config"</span></div><div class="line">    put <span class="constant">File</span>.read(<span class="string">"config/database.example.yml"</span>), <span class="string">"<span class="subst">#{shared_path}</span>/config/database.yml"</span></div><div class="line">    puts <span class="string">"Now edit the config files in <span class="subst">#{shared_path}</span>."</span></div><div class="line">  <span class="keyword">end</span></div><div class="line">  after <span class="string">"deploy:setup"</span>, <span class="string">"deploy:setup_config"</span></div><div class="line"></div><div class="line">  task <span class="symbol">:symlink_config</span>, <span class="symbol">roles:</span> <span class="symbol">:app</span> <span class="keyword">do</span></div><div class="line">    run <span class="string">"ln -nfs <span class="subst">#{shared_path}</span>/config/database.yml <span class="subst">#{release_path}</span>/config/database.yml"</span></div><div class="line">  <span class="keyword">end</span></div><div class="line">  after <span class="string">"deploy:finalize_update"</span>, <span class="string">"deploy:symlink_config"</span></div><div class="line"></div><div class="line">  desc <span class="string">"Make sure local git is in sync with remote."</span></div><div class="line">  task <span class="symbol">:check_revision</span>, <span class="symbol">roles:</span> <span class="symbol">:web</span> <span class="keyword">do</span></div><div class="line">    <span class="keyword">unless</span> `git rev-parse <span class="constant">HEAD</span>` == `git rev-parse origin/master`</div><div class="line">      puts <span class="string">"WARNING: HEAD is not the same as origin/master"</span></div><div class="line">      puts <span class="string">"Run `git push` to sync changes."</span></div><div class="line">      exit</div><div class="line">    <span class="keyword">end</span></div><div class="line">  <span class="keyword">end</span></div><div class="line">  before <span class="string">"deploy"</span>, <span class="string">"deploy:check_revision"</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h2 id="Setup_Nginx/Unicorn_in_Rails_application">Setup Nginx/Unicorn in Rails application</h2>
+<h3 id="Nginx">Nginx</h3>
+<p>接下來要針對我們的 Rails application 進行 Nginx 設定，首先在 application 底下新增 <code>/config/nginx.conf</code>：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="title">upstream</span> unicorn {</div><div class="line">  <span class="title">server</span> <span class="url">unix:/tmp/unicorn.demo.sock</span> fail_timeout=<span class="number">0</span>;</div><div class="line">}</div><div class="line"></div><div class="line"><span class="title">server</span> {</div><div class="line">  <span class="title">listen</span> <span class="number">80</span> default deferred;</div><div class="line">  <span class="comment"># server_name example.com;</span></div><div class="line">  <span class="title">root</span> /home/deployer/apps/demo/current/public;</div><div class="line"></div><div class="line">  <span class="title">location</span><span class="regexp"> ^~</span> /assets/ {</div><div class="line">    <span class="title">gzip_static</span> <span class="built_in">on</span>;</div><div class="line">    <span class="title">expires</span> max;</div><div class="line">    <span class="title">add_header</span> Cache-Control public;</div><div class="line">  }</div><div class="line"></div><div class="line">  <span class="title">try_files</span> <span class="variable">$uri</span>/index.html <span class="variable">$uri</span> <span class="variable">@unicorn</span>;</div><div class="line">  <span class="title">location</span> <span class="variable">@unicorn</span> {</div><div class="line">    <span class="title">proxy_set_header</span> X-Forwarded-For <span class="variable">$proxy_add_x_forwarded_for</span>;</div><div class="line">    <span class="title">proxy_set_header</span> Host <span class="variable">$http_host</span>;</div><div class="line">    <span class="title">proxy_redirect</span> <span class="built_in">off</span>;</div><div class="line">    <span class="title">proxy_pass</span> <span class="url">http://unicorn</span>;</div><div class="line">  }</div><div class="line"></div><div class="line">  <span class="title">error_page</span> <span class="number">500</span> <span class="number">502</span> <span class="number">503</span> <span class="number">504</span> /<span class="number">500</span>.html;</div><div class="line">  <span class="title">client_max_body_size</span> <span class="number">4G</span>;</div><div class="line">  <span class="title">keepalive_timeout</span> <span class="number">10</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>其中 <code>server</code> block 與 Apache 的 VirtualHost 類似。<br>第 1 ~ 3 行的 <code>upstream</code> block 告訴 nginx 要將動態網頁導到 Unicorn，這邊給定 <code>upstream</code> block 名為 unicorn，並使用 <code>server</code> 指向 Unix socket (對應底下的 Unicorn 設定)。<br>同時會將 <code>fail_timeout</code> 設定為 0，這樣如果 Rails application 無法回應且 Unicorn 已經 times out 時，nginx 才能夠正確處理。  </p>
+<p>第 6 行告訴 server 要 <code>listen</code> port 80，並將其設定為 default，表示如果找不到 matching server name 的話就使用這個 server (可參考<a href="http://nginx.org/en/docs/http/request_processing.html" target="_blank" rel="external">這篇</a>)。deferred 則是會啓動 Ubuntu 的 <code>TCP_DEFER_ACCEPT</code> 設定 (可參考<a href="http://stackoverflow.com/questions/8449058/what-does-the-deferred-option-mean-in-nginxs-listen-directive" target="_blank" rel="external">這篇</a>)。  </p>
+<p>第 7 行是如果有 domain name 的話，可以在此輸入。  </p>
+<p>第 8 行的 <code>root</code> 則是告訴 nginx 這個 application 的 static files 在哪裡。  </p>
+<p>第 10 行使用了 nginx 的 gzip_static module。在收到 request 後，會到 /assets/ 當中尋找 <code>.gz</code> 的壓縮檔。比如 <a href="http://www.example.com/stylesheets/homepage.css，nginx" target="_blank" rel="external">http://www.example.com/stylesheets/homepage.css，nginx</a> 就會先去找 /assets/stylesheets/homepage.css.gz 這個檔案，如果存在的話就直接回傳；如果不存在，就將 /assets/stylesheets/homepage.css 進行 gzip 壓縮之後再回傳，這樣就可以避免重複的壓縮動作。這個 module 會對所有 request 都有效，而一般來說，大部份的 request 都是屬於 dynamic 的，並不會有 <code>.gz</code>，所以建議將這個 module 指到含有 <code>.gz</code> 的靜態資料夾 /assets/ 比較恰當。  </p>
+<p>第 16 行是告訴 nginx 去 try 這些 list 是否存在於剛剛設定的 root 當中，如果不存在的話，就會到 Rails application 去產生。比如找不到 <code>index.html</code> 的話，就會到 Rails application 產生；而 <code>$uri</code> 則是 user 傳過來的 URL。  </p>
+<p>至於該如何找到 Rails application，就是要透過 named location 了，在這裡我們命名為 <code>@unicorn</code> (對應到第 17 行的 location command)。在 location command 當中，nginx 會透過 <code>proxy_pass</code> 把收到的 request 丟給 Unicorn server 來處理。  </p>
+<p>第 21 行是告訴 nginx 要 <code>proxy_pass</code> 到 <code>http://unicorn</code> ，這樣就會指向到上面的 upstream block (記得要設定與上面的 upstream 名稱相同才行)。</p>
+<p>第 24 行則是告訴 nginx 如果遇到 500, 502, 503, 504 錯誤的話，就顯示 Rails application 的 <code>500.html</code> 頁面。</p>
+<h3 id="Unicorn">Unicorn</h3>
+<p>接下來要設定 Unicorn，同樣也是在 Rails application 底下新增 <code>/config/unicorn.rb</code>：</p>
+<figure class="highlight"><figcaption><span>/config/unicorn.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">root = <span class="string">"/home/deployer/apps/demo/current"</span></div><div class="line">working_directory root</div><div class="line">pid <span class="string">"<span class="subst">#{root}</span>/tmp/pids/unicorn.pid"</span></div><div class="line">stderr_path <span class="string">"<span class="subst">#{root}</span>/log/unicorn.log"</span></div><div class="line">stdout_path <span class="string">"<span class="subst">#{root}</span>/log/unicorn.log"</span></div><div class="line"></div><div class="line">listen <span class="string">"/tmp/unicorn.demo.sock"</span></div><div class="line">worker_processes <span class="number">2</span></div><div class="line">timeout <span class="number">30</span></div></pre></td></tr></table></figure>
+
+<p>第 1, 2 行設定了 Rails application 的位置。<br>第 3 ~ 5 行則是設定了 pid 以及 log 的位置。<br>第 7 行告訴 Unicorn 要 listen 哪個 socket (或是改成 port 也可以，變成傳入數字)。<br>第 8 行是告訴 Unicorn 在 boot up 的時候，有多少個 Rails instances，最少應該要等於這台主機的 cpu 核心數(關於 <code>worker_precesses</code> 的調校可以看<a href="http://unicorn.bogomips.org/TUNING.html" target="_blank" rel="external">這篇</a>)。<br>第 9 行則是設定了 timeout 的時間，這邊是 30 秒。</p>
+<p>最後，我們會使用 shell script 來啓動 Unicorn，方法一樣是新增一個檔案 <code>/config/unicorn_init.sh</code>，雖然這個檔案有很多設定，但其實我們只要動到最上面的設定就好：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div></pre></td><td class="code"><pre><div class="line"><span class="shebang">#!/bin/sh</span></div><div class="line"><span class="keyword">set</span> <span class="operator">-e</span></div><div class="line"></div><div class="line"><span class="comment"># Feel free to change any of the following variables for your app:</span></div><div class="line">TIMEOUT=<span class="variable">${TIMEOUT-60}</span></div><div class="line">APP_ROOT=/home/deployer/apps/demo/current</div><div class="line">PID=<span class="variable">$APP_ROOT</span>/tmp/pids/unicorn.pid</div><div class="line">CMD=<span class="string">"cd <span class="variable">$APP_ROOT</span>; bundle exec unicorn -D -c <span class="variable">$APP_ROOT</span>/config/unicorn.rb -E production"</span></div><div class="line">AS_USER=deployer</div><div class="line"><span class="keyword">set</span> -u</div><div class="line"></div><div class="line">OLD_PIN=<span class="string">"<span class="variable">$PID</span>.oldbin"</span></div><div class="line"></div><div class="line"><span class="function"><span class="title">sig</span></span> () {</div><div class="line">  test <span class="operator">-s</span> <span class="string">"<span class="variable">$PID</span>"</span> &amp;&amp; kill -<span class="variable">$1</span> `cat <span class="variable">$PID</span>`</div><div class="line">}</div><div class="line"></div><div class="line"><span class="function"><span class="title">oldsig</span></span> () {</div><div class="line">  test <span class="operator">-s</span> <span class="variable">$OLD_PIN</span> &amp;&amp; kill -<span class="variable">$1</span> `cat <span class="variable">$OLD_PIN</span>`</div><div class="line">}</div><div class="line"></div><div class="line"><span class="function"><span class="title">run</span></span> () {</div><div class="line">  <span class="keyword">if</span> [ <span class="string">"<span class="variable">$(id -un)</span>"</span> = <span class="string">"<span class="variable">$AS_USER</span>"</span> ]; <span class="keyword">then</span></div><div class="line">    <span class="built_in">eval</span> <span class="variable">$1</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    su -c <span class="string">"<span class="variable">$1</span>"</span> - <span class="variable">$AS_USER</span></div><div class="line">  <span class="keyword">fi</span></div><div class="line">}</div><div class="line"></div><div class="line"><span class="keyword">case</span> <span class="string">"<span class="variable">$1</span>"</span> <span class="keyword">in</span></div><div class="line">start)</div><div class="line">  sig <span class="number">0</span> &amp;&amp; <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Already running"</span> &amp;&amp; <span class="keyword">exit</span> <span class="number">0</span></div><div class="line">  run <span class="string">"<span class="variable">$CMD</span>"</span></div><div class="line">  ;;</div><div class="line">stop)</div><div class="line">  sig QUIT &amp;&amp; <span class="keyword">exit</span> <span class="number">0</span></div><div class="line">  <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Not running"</span></div><div class="line">  ;;</div><div class="line">force-stop)</div><div class="line">  sig TERM &amp;&amp; <span class="keyword">exit</span> <span class="number">0</span></div><div class="line">  <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Not running"</span></div><div class="line">  ;;</div><div class="line">restart|reload)</div><div class="line">  sig HUP &amp;&amp; <span class="built_in">echo</span> reloaded OK &amp;&amp; <span class="keyword">exit</span> <span class="number">0</span></div><div class="line">  <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Couldn't reload, starting '<span class="variable">$CMD</span>' instead"</span></div><div class="line">  run <span class="string">"<span class="variable">$CMD</span>"</span></div><div class="line">  ;;</div><div class="line">upgrade)</div><div class="line">  <span class="keyword">if</span> sig USR2 &amp;&amp; sleep <span class="number">2</span> &amp;&amp; sig <span class="number">0</span> &amp;&amp; oldsig QUIT</div><div class="line">  <span class="keyword">then</span></div><div class="line">    n=<span class="variable">$TIMEOUT</span></div><div class="line">    <span class="keyword">while</span> test <span class="operator">-s</span> <span class="variable">$OLD_PIN</span> &amp;&amp; test <span class="variable">$n</span> -ge <span class="number">0</span></div><div class="line">    <span class="keyword">do</span></div><div class="line">      <span class="built_in">printf</span> <span class="string">'.'</span> &amp;&amp; sleep <span class="number">1</span> &amp;&amp; n=$(( <span class="variable">$n</span> - <span class="number">1</span> ))</div><div class="line">    <span class="keyword">done</span></div><div class="line">    <span class="built_in">echo</span></div><div class="line"></div><div class="line">    <span class="keyword">if</span> test <span class="variable">$n</span> <span class="operator">-lt</span> <span class="number">0</span> &amp;&amp; test <span class="operator">-s</span> <span class="variable">$OLD_PIN</span></div><div class="line">    <span class="keyword">then</span></div><div class="line">      <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"<span class="variable">$OLD_PIN</span> still exists after <span class="variable">$TIMEOUT</span> seconds"</span></div><div class="line">      <span class="keyword">exit</span> <span class="number">1</span></div><div class="line">    <span class="keyword">fi</span></div><div class="line">    <span class="keyword">exit</span> <span class="number">0</span></div><div class="line">  <span class="keyword">fi</span></div><div class="line">  <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Couldn't upgrade, starting '<span class="variable">$CMD</span>' instead"</span></div><div class="line">  run <span class="string">"<span class="variable">$CMD</span>"</span></div><div class="line">  ;;</div><div class="line">reopen-logs)</div><div class="line">  sig USR1</div><div class="line">  ;;</div><div class="line">*)</div><div class="line">  <span class="built_in">echo</span> &gt;&amp;<span class="number">2</span> <span class="string">"Usage: <span class="variable">$0</span> &lt;start|stop|restart|upgrade|force-stop|reopen-logs&gt;"</span></div><div class="line">  <span class="keyword">exit</span> <span class="number">1</span></div><div class="line">  ;;</div><div class="line"><span class="keyword">esac</span></div></pre></td></tr></table></figure>
+
+<p>然後要將這段 script 的權限設定為 executable：</p>
+<pre><code>$ chmod +<span class="keyword">x</span> config/unicorn_init.<span class="keyword">sh</span>
+</code></pre><p>記得要把這些設定加到 Git 裡：</p>
+<pre><code><span class="variable">$ </span>git add .
+<span class="variable">$ </span>git commit -m <span class="string">'Deployment config files'</span>
+<span class="variable">$ </span>git push origin master
+</code></pre><h2 id="Deploy">Deploy</h2>
+<p>現在， 可以執行 <code>cap deploy:setup</code> 來 deploy 我們的 Rails application 了 (有些人可能會因為 shell 設定不同，需要在指令前面加上 <code>bundle exec</code>)，這個指令會以 deployer 的身份登入到 server。</p>
+<pre><code><span class="variable">$ </span>cap <span class="symbol">deploy:</span>setup
+</code></pre><p>這段指令會到 server 新增一些與 application 有關的資料夾，然後根據前面的設定，將 Nginx 與 Unicorn 設定到 server，再上傳 <code>database.yml</code>。我們接著要登入到     sever 來修改 <code>database.yml</code>：</p>
+<pre><code><span class="variable">$ </span>ssh deployer<span class="variable">@xxx</span>.xxx.xxx.xxx
+</code></pre><p>登入之後就進行修改：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>cd apps/demo/shared/config/
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~/apps/demo/shared/config</span><span class="variable">$ </span>vim database.yml
+</code></pre><p>我們只需要 production 環境設定，因此只要留下 <code>production</code> 部分就好：</p>
+<figure class="highlight"><figcaption><span>/apps/demo/shared/config/database.yml</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="label">production:</span></div><div class="line">  adapter: mysql2</div><div class="line">  database: demo_production</div><div class="line">  pool: <span class="number">5</span></div><div class="line">  username: demo</div><div class="line">  password: demo</div><div class="line">  host: localhost</div><div class="line">  encoding: utf8</div></pre></td></tr></table></figure>
+
+<p>這是我們唯一需要登入到 server 修改的檔案，所以在修改完了之後就可以登出了。</p>
+<h3 id="自動登入_Server">自動登入 Server</h3>
+<p>每次使用 <code>ssh</code> 登入到 server 都需要輸入密碼是一件很麻煩的事，我們可以輸入以下指令來免除這個麻煩。這個指令會複製 public RSA 到 <code>deployers</code> authorized keys 當中。</p>
+<pre><code><span class="variable">$ </span>cat ~<span class="regexp">/.ssh/id</span>_rsa.pub | ssh deployer<span class="variable">@xxx</span>.xxx.xxx.xxx <span class="string">'cat &gt;&gt; ~/.ssh/authorized_keys'</span>
+</code></pre><p>另外我們還需要執行 <code>ssh-add</code> 讓 SSH Agent 能夠作用。在 Capistrano deployment 檔案當中有一行：</p>
+<figure class="highlight"><figcaption><span>/config/deploy.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ssh_options[<span class="symbol">:forward_agent</span>] = <span class="keyword">true</span></div></pre></td></tr></table></figure>
+
+<p>這行告訴 Capistrano 使用 local keys 而非 server keys。這行搭配 <code>ssh-add</code> 表示當我們 ssh 到 server 的時候，可以讓 server 存取 Github，並且無需再針對 server 設定一組 deploy key 到 Github 裡。  </p>
+<p>如果是 Mac OSX 的話，我們還可以加上 <code>-K</code> 參數，這樣就可以把 passphrase 加到 keychain 裡。</p>
+<pre><code><span class="variable">$ssh</span>-add -K
+</code></pre><p>接著就可以 deploy 我們的 application 了：</p>
+<pre><code><span class="variable">$ </span>cap <span class="symbol">deploy:</span>cold
+</code></pre><p>cold deploy 表示要執行 database migrations 並且讓 server 保持在 start 狀態 (而非 restart)。<br>用 cold deploy 的原因在於，有時候第一次執行時會噴一堆錯誤，此時就可以看一下錯誤資訊趕快做修正。</p>
+<h2 id="Configuring_Nginx">Configuring Nginx</h2>
+<p>此時如果用 browser 拜訪我們的網站，會發現仍然是 “Welcome to nginx” 頁面，這是因為 nginx 預設的頁面還留著的緣故。所以我們要再次 ssh 到 server 裡，然後把預設的頁面拿掉並 restart nginx：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>sudo rm /etc/nginx/sites-enabled/default
+[sudo] password <span class="keyword">for</span> <span class="symbol">deployer:</span>
+deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>sudo service nginx restart
+<span class="constant">Restarting</span> <span class="symbol">nginx:</span> nginx.
+</code></pre><p>第一行指令是拿掉 symbolic link，這樣可以確保我們不會誤刪掉重要的檔案。  </p>
+<p>同樣是在 server 當中，我們還要執行一段指令，讓 Unicorn 在 server restart 時候可以正確地啟動：</p>
+<pre><code>deployer<span class="variable">@li460</span>-<span class="number">213</span><span class="symbol">:~</span><span class="variable">$ </span>sudo update-rc.d unicorn_demo defaults
+</code></pre><p>這段指令當中，把我們的 service 名稱傳進去，這邊是 <code>unicorn_demo</code>，後面再接著 <code>defaults</code>。  </p>
+<p>再次用 browser 拜訪網站，就可以看到我們的 Rails application 了。  </p>
+<p>後續如果 application 有修改，只要將修改的部分 push 到 Github，然後執行 <code>cap deploy</code> 就會自動 deploy 了！</p>
+<pre><code><span class="variable">$ </span>git commit -am <span class="string">'Fixing something'</span>
+<span class="variable">$ </span>git push
+<span class="variable">$ </span>cap deploy
+</code></pre><hr>
+<h3 id="Trouble_Shooting">Trouble Shooting</h3>
+<h4 id="nginx_binding_issue">nginx binding issue</h4>
+<p>到 <code>/etc/nginx/sites-enabled/</code> 資料夾底下有個 <code>default</code> 檔案，將其中一行：<br>    listen [::]:80 default_server;<br>給註解掉，再執行 <code>service nginx restart</code> 就可以了。</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/03/07/rails-deploy-ji-chu-jiao-xue/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/03/07/rails-deploy-ji-chu-jiao-xue/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/03/07/rails-deploy-ji-chu-jiao-xue/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/05/30/rails-4/">
+        ← Rails 4
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/01/23/scss-variable/">
+        Scss - variable →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

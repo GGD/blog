@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails 4(4) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2013-06-02T04:03:00.000Z" itemprop="datePublished">
+          6月 2 2013
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails 4(4)</h1>
+    <section class="post-content">
+      <p>紀錄 Rails 3 to Rails 4 的一些改變。<br><a id="more"></a></p>
+<h2 id="STRONG_PARAMETERS">STRONG PARAMETERS</h2>
+<p>在使用 Rails 3 的 form 上傳資料時，為了避免使用者上傳不必要的參數，會在 model 加上 whitelists 來過濾 mass assignment。比如：</p>
+<figure class="highlight"><figcaption><span>models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  attr_accessible <span class="symbol">:name</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">def <span class="operator"><span class="keyword">update</span></span></div><div class="line">  <span class="keyword">if</span> @<span class="keyword">user</span>.update_attributes(params[:<span class="keyword">user</span>])</div><div class="line">    redirect_to @<span class="keyword">user</span>, notice: <span class="string">'Updated'</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="keyword">action</span>: <span class="string">'edit'</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>這樣就能過濾使用者上傳的資料：<br>    Parameters: {“user”=&gt;{“name”=&gt;”Cowzombie”}}   # valid<br>    Parameters: {“user”=&gt;{“name”=&gt;”Cowzombie”, “admin”=&gt;”1”}}   # invalid</p>
+<p>在 Rails 4 中，管理 whitelists 的工作由 model 交給了 controller。<br>因此 model 裡頭不會再有 whitelists，而 controller 則多了一層過濾：</p>
+<figure class="highlight"><figcaption><span>models/user.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>controllers/users_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>update</div><div class="line">  <span class="keyword">if</span> <span class="variable">@user</span>.update(user_params)</div><div class="line">    redirect_to <span class="variable">@user</span>, <span class="symbol">notice:</span> <span class="string">'Updated'</span></div><div class="line">  <span class="keyword">else</span></div><div class="line">    render <span class="symbol">action:</span> <span class="string">'edit'</span></div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line">private</div><div class="line">  <span class="function"><span class="keyword">def</span> </span>user_params</div><div class="line">    params.<span class="keyword">require</span>(<span class="symbol">:user</span>).permit(<span class="symbol">:name</span>)</div><div class="line">  <span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h3 id="how_STRONG_PARAMETERES_works">how STRONG PARAMETERES works</h3>
+<p>接下來看看 strong parameters 是如何運作的。假設我們的 application 收到的 parameter hash 如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="rules">{</span></div><div class="line">  <span class="rule"><span class="attribute">id</span>:<span class="value"> <span class="string">"1"</span>,</span></span></div><div class="line">  user: {</div><div class="line">    name: <span class="string">"Cowzombie"</span></div><div class="line">  }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>首先看到 <code>params.require(:user)</code>，<code>require(:user)</code> 驗證 parameter hash 當中是否包含 <code>user</code> key，如果有就回傳 empty hash（因為此時還沒有同意傳入任何 parameters）；如果沒有就丟出錯誤並回傳 404：<br>    ActionController::ParameterMissing:<br>    param not found: user</p>
+<p>再來看到整段 <code>params.require(:user).permit(:name)</code>，<code>permit(:name)</code> 表示只允許 <code>name</code> parameter 傳入，如果使用者多傳入其他的 parameter 比如 <code>admin</code>，<code>permit</code> 就會自動把不在清單裡的 parameter 給刪掉。  </p>
+<p><code>permit</code> 同時也會檢查 parameter types（預設的 type 有 String, Symbol, NilClass…），並且設預會 log 住任何 unpermitted parameters。<br>如果想要在收到 unpermitted parameters 時候噴出錯誤訊息，可以到 <code>config/application.rb</code> 設定：</p>
+<figure class="highlight"><figcaption><span>config/application.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="attribute">config.action_controller.action_on_unpermitted_parameters </span>=<span class="string"> :raise</span></div></pre></td></tr></table></figure>
+
+<p>如果仍然要在 Rails 4 裡使用 <code>attr_accessible</code> 或是 <code>attr_protected</code>，可以使用這個 gem：</p>
+<figure class="highlight"><figcaption><span>Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'protected_attributes'</span></div></pre></td></tr></table></figure>
+
+<p><a href="https://github.com/rails/strong_parameters" target="_blank" rel="external">https://github.com/rails/strong_parameters</a> 有更多關於 strong parameters 的資訊。</p>
+<h2 id="REMOTE_FORMS">REMOTE FORMS</h2>
+<h3 id="AUTHENTICITY_TOKEN">AUTHENTICITY TOKEN</h3>
+<p>Rails 的 form 裡頭有個 authenticity_token：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;form id=<span class="string">"edit_user_1"</span><span class="keyword">...</span>&gt;</div><div class="line">  &lt;input name=<span class="string">"authenticity_token"</span> type=<span class="string">"hidden"</span> value=<span class="string">"a1RuTJ...="</span> /&gt;</div><div class="line">  &lt;input id=<span class="string">"user_name"</span> type=<span class="string">"text"</span> value=<span class="string">"Cowzombie"</span> /&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">&lt;/form&gt;</div></pre></td></tr></table></figure>
+
+<p>會在 submit form 的時候進行比對：<br>    Parameters: {“authenticity_token”=&gt;”a1RuTJ…=”,<br>      “user”=&gt;{“name”=&gt;”Cowzombie”}, “id”=&gt;”1”}</p>
+<p>當我們使用 remote form 的時候，這個 authenticity_token 也有包含在裡頭：</p>
+<figure class="highlight"><figcaption><span>views/users/_form.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;%= form_for(@user, remote: true) do |f| %&gt;</div><div class="line">  &lt;%= f.text_field :name %&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">&lt;% end %&gt;</div></pre></td></tr></table></figure>
+
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;form data-remote=<span class="string">"true"</span> id=<span class="string">"edit_user_1"</span><span class="keyword">...</span>&gt;</div><div class="line">  &lt;input name=<span class="string">"authenticity_token"</span> type=<span class="string">"hidden"</span> value=<span class="string">"iS8pNE...="</span> /&gt;</div><div class="line">  &lt;input id=<span class="string">"user_name"</span> type=<span class="string">"text"</span> value=<span class="string">"Cowzombie"</span> /&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">&lt;/form&gt;</div></pre></td></tr></table></figure>
+
+<p>但是實際上，在我們使用 AJAX request 時，Rails 並不會用到 remote form 裡面的這個 authenticity_token，而是會使用 meta 裡頭相同的 token：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;meta <span class="variable">content=</span><span class="string">"iS8pNE...="</span> <span class="variable">name=</span><span class="string">"csrf-token"</span> /&gt;</div></pre></td></tr></table></figure>
+
+<p>因此 Rails 4 就把 remote form 裡頭的 authenticity_token 給拿掉了：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;form data-remote=<span class="string">"true"</span> di=<span class="string">"dit_user_1"</span><span class="keyword">...</span>&gt;</div><div class="line">  &lt;input id=<span class="string">"user_name"</span> type=<span class="string">"text"</span> value=<span class="string">"Cowzombie"</span> /&gt;</div><div class="line">  <span class="keyword">...</span></div><div class="line">&lt;/form&gt;</div></pre></td></tr></table></figure>
+
+<h4 id="what_if_JavaScript_turned_off_in_browsers">what if JavaScript turned off in browsers</h4>
+<p>如果使用者的瀏覽器把 JavaScript 給關掉了，那這樣 Rails 就會因為讀不到 CSRF token 而噴錯誤：<br>    Can’t verify CSRF token authenticity<br>    ActionController::InvalidAuthenticityToken</p>
+<p>要解決這個問題很簡單，只要再把 authenticity token 放回 remote form 就好。可以透過此設定：</p>
+<figure class="highlight"><figcaption><span>config/application.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">config.action_view.embed_authenticity_token_<span class="keyword">in</span>_remote_forms = <span class="literal">true</span></div></pre></td></tr></table></figure>
+
+<h3 id="PROTECT_FROM_FORGERY">PROTECT FROM FORGERY</h3>
+<p>有些使用者會試圖假造 authenticity_token，在 Rails 3 當中遇到此情況時，預設會 reset session 並且把以下的 warning 給 log 起來：<br>    WARNING: Can’t verify CSRF token authenticity</p>
+<p>而針對此情形， Rails 4 則有更多的處理方式（通常會放在 <code>controllers/applications.rb</code> 裡面）：<br>    protect_from_forgery with: :exception # this is a good idea! (and also the default)</p>
+<pre><code><span class="comment"># 會產生錯誤：</span>
+<span class="literal">ActionController::InvalidAuthenticityToken</span>
+</code></pre><p>或是<br>    protect_from_forgery with: :null_session</p>
+<pre><code><span class="preprocessor"># 會清空 session，但不會產生錯誤（直到接收到 valid request 為止）</span>
+</code></pre><p>或是</p>
+<pre><code>protect_from_forgery <span class="symbol">with:</span> <span class="symbol">:reset_session</span>
+<span class="comment"># 會針對這個使用者產生新的 session，並把舊的 session 給 destroy 掉</span>
+</code></pre>
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2013/06/02/rails-4-4/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2013/06/02/rails-4-4/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2013/06/02/rails-4-4/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2013/06/05/rails-4-5/">
+        ← Rails 4(5)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2013/06/01/rails-4-3/">
+        Rails 4(3) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

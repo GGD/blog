@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Private Pub | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-08-28T03:22:00.000Z" itemprop="datePublished">
+          8月 28 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Private Pub</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/ryanb/private_pub" target="_blank" rel="external">Private Pub</a> 是一套即時更新訊息的套件。<br><a id="more"></a></p>
+<p>這邊以 Chat 為例。要達到即時聊天的作法，可以設定每隔幾秒鐘就 request 一次，但顯然這樣並不是真的即時。另外也可以讓每個使用者維持一個 socket connection 來向 server 拉資料，但 Rails 並沒有針對這種 long requests 來作設定。<br><a href="https://github.com/jamesotron/faye-rails" target="_blank" rel="external">Faye</a> 與 Private Pub 則可以解決這樣的窘境。  </p>
+<p>首先看一下 view template：</p>
+<figure class="highlight"><figcaption><span>/app/views/messages/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">h1</span>&gt;</span>Chat<span class="tag">&lt;/<span class="title">h1</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="title">ul</span> <span class="attribute">id</span>=<span class="value">"chat"</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= render @messages %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">ul</span>&gt;</span></div><div class="line"></div><div class="line"><span class="vbscript">&lt;%= form_for Message.<span class="keyword">new</span>, remote: <span class="literal">true</span> <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.text_field :content %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.submit <span class="string">"Send"</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div></pre></td></tr></table></figure>
+
+<p>當中的 form 設定 <code>remote: true</code> 之後，訊息就可以透過 AJAX 的方法送到 <code>MessageController</code> 的 <code>create</code> action。</p>
+<figure class="highlight"><figcaption><span>/app/controllers/messages_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">MessagesController</span> <span class="inheritance">&lt; <span class="parent">ApplicationController</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>index</div><div class="line">    <span class="variable">@messages</span> = <span class="constant">Message</span>.all</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>create</div><div class="line">    <span class="variable">@message</span> = <span class="constant">Message</span>.create!(params[<span class="symbol">:message</span>])</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>由於是透過 AJAX 呼叫的，這個 <code>create</code> action 不會產生任何的 response，而是會產生一個 javascript template：<br><figure class="highlight"><figcaption><span>/app/views/messages/create.js.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="variable">$(</span><span class="string">"#chat"</span>).append(<span class="string">"&lt;%= j render(@message) %&gt;"</span>);</div><div class="line"><span class="variable">$(</span><span class="string">"#new_message"</span>)[<span class="number">0</span>].reset();</div></pre></td></tr></table></figure>
+
+<h4 id="安裝">安裝</h4>
+<figure class="highlight"><figcaption><span>/Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'jquery-rails'</span></div><div class="line">gem <span class="string">'private_pub'</span></div></pre></td></tr></table></figure><br>接著執行 <code>bundle install</code> 後，再執行：<br>    $ rails g private_pub:install<br>        create  config/private_pub.yml<br>        create  private_pub.ru<br>#### 啓動<br>    $ rackup private_pub.ru -s thin -E production<br>    &gt;&gt; Thin web server (v1.3.1 codename Triple Espresso)<br>    &gt;&gt; Maximum connections set to 1024<br>    &gt;&gt; Listening on 0.0.0.0:9292, CTRL+C to stop<br>這段會在 production 環境下，透過 Thin server 來執行 Faye。接著再修改 <code>application.js</code><br><figure class="highlight"><figcaption><span>/app/assets/javascripts/application.js</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="attribute">//</span>=<span class="string"> require private_pub</span></div></pre></td></tr></table></figure><br>如果使用的 Rails 版本小於 3.1，可以 include 這個 Javascript 檔案到 layout 中。<br><br>#### 使用<br>在設定就緒之後，接著就是要「訂閱」這個頻道。在 view template 當中，透過 <code>subscribe_to</code> 並傳入頻道名稱，而 Faye 的頻道格式長得跟路徑差不多，這邊頻道就輸入 <code>/messages/new</code>。<br><figure class="highlight"><figcaption><span>/app/views/messages/index.html.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">h1</span>&gt;</span>Chat<span class="tag">&lt;/<span class="title">h1</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="title">ul</span> <span class="attribute">id</span>=<span class="value">"chat"</span>&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= render @messages %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">ul</span>&gt;</span></div><div class="line"></div><div class="line"><span class="vbscript">&lt;%= form_for Message.<span class="keyword">new</span>, remote: <span class="literal">true</span> <span class="keyword">do</span> |f| %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.text_field :content %&gt;</span></div><div class="line">  <span class="vbscript">&lt;%= f.submit <span class="string">"Send"</span> %&gt;</span></div><div class="line"><span class="vbscript">&lt;% <span class="keyword">end</span> %&gt;</span></div><div class="line"></div><div class="line"><span class="vbscript">&lt;%= subscribe_to <span class="string">"/messages/new"</span> %&gt;</span></div></pre></td></tr></table></figure><br>接著把剛剛的 Javascript template 用 <code>publish_to</code> 包成區塊。<br><figure class="highlight"><figcaption><span>/app/views/messages/create.js.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;% publish_to <span class="string">"/messages/new"</span> <span class="keyword">do</span> <span class="variable">%&gt;</span></div><div class="line">  <span class="variable">$(</span><span class="string">"#chat"</span>).append(<span class="string">"&lt;%= j render(@message) %&gt;"</span>);</div><div class="line">  <span class="variable">$(</span><span class="string">"#new_message"</span>)[<span class="number">0</span>].reset();</div><div class="line">&lt;% end <span class="variable">%&gt;</span></div></pre></td></tr></table></figure><br>這樣一來，所有訂閱此一頻道的使用者都可以即時接收到訊息。<br><br>#### 其他推送方法<br>如果不想用 AJAX 的方法推送訊息，而是想用其他方法例如從 controller action 當中來推送，可以使用 <code>PrivatePub.publish_to</code> 來達成。底下即是以 <code>alert</code> 來推送：<br><figure class="highlight"><figcaption><span>/app/controllers/messages_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>create</div><div class="line">  <span class="variable">@message</span> = <span class="constant">Message</span>.create!(params[<span class="symbol">:message</span>])</div><div class="line">  <span class="constant">PrivatePub</span>.publish_to(<span class="string">"/messages/new"</span>, <span class="string">"alert('<span class="subst">#{<span class="variable">@message</span>.content}</span>');"</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h4 id="用_JSON_來傳遞">用 JSON 來傳遞</h4>
+<p>如果想用 JSON 格式來推送，可以傳遞一個 object （比如說 hash）給 <code>publish_to</code>，這樣就會轉成 JSON 格式：</p>
+<figure class="highlight"><figcaption><span>/app/controllers/messages_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>create</div><div class="line">  <span class="variable">@message</span> = <span class="constant">Message</span>.create!(params[<span class="symbol">:message</span>])</div><div class="line">  <span class="constant">PrivatePub</span>.publish_to(<span class="string">"/messages/new"</span>, <span class="symbol">message:</span> <span class="variable">@message</span>)</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>如果用 JSON 來推送，就必須再另外寫一段 Javascript 來處理接收到的資料，這邊用 <code>message</code> 的 CoffeeScript 來處理：</p>
+<figure class="highlight"><figcaption><span>/app/assets/javascripts/messages.js.erb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="type">PrivatePub</span>.subscribe <span class="string">"/messages/new"</span>, (<span class="typedef"><span class="keyword">data</span>, channel) -&gt;</span></div><div class="line">  alert <span class="typedef"><span class="keyword">data</span>.message.content</span></div></pre></td></tr></table></figure>
+
+<p>上述呼叫了 <code>PrivatePub.subscribe</code> 來處理，指定頻道名稱以及 callback function，這個 function 包含了 <code>data</code> 和 <code>channel</code> 兩個參數。每次頻道接收到 JSON 資料的時候都會觸發 callback，這邊會 <code>alert</code> 資料的 <code>message.content</code>。</p>
+<h4 id="其他設定">其他設定</h4>
+<p>Private Pub 的好處之一是每個頻道預設都是 pirvate 的，因此可以不用擔心非此頻道的使用者監聽。此外，還可以設定使用者登出一段時間後，該訂閱的到期時間。這些可以在 <code>private_pub.yml</code> 當中來設定：</p>
+<figure class="highlight"><figcaption><span>/config/private_pub.yml</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">development:</div><div class="line">  <span class="keyword">server</span>: <span class="string">"http://localhost:9292/faye"</span></div><div class="line">  secret_token: <span class="string">"secret"</span></div><div class="line">test:</div><div class="line">  <span class="keyword">server</span>: <span class="string">"http://localhost:9292/faye"</span></div><div class="line">  secret_token: <span class="string">"secret"</span></div><div class="line">production:</div><div class="line">  <span class="keyword">server</span>: <span class="string">"http://example.com/faye"</span></div><div class="line">  secret_token: <span class="string">"210eb617b6ce1c351d986a3185d34025cf42e5091a37502f18f595f7e8773853"</span></div><div class="line">  signature_expiration: <span class="number">3600</span> <span class="preprocessor"># one hour</span></div></pre></td></tr></table></figure>
+
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/08/28/private-pub/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/08/28/private-pub/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/08/28/private-pub/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/08/28/zai-sublime-text-2-shu-ru-zhong-wen-ubuntu-huan-jing/">
+        ← 在 Sublime Text 2 輸入中文 (Ubuntu 環境)
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/08/21/delayed-job/">
+        Delayed Job →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

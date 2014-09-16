@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>deploy Rails 3 with Apache MySQL Passenger Capistrano to EC2 | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-07-20T02:43:00.000Z" itemprop="datePublished">
+          7月 20 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">deploy Rails 3 with Apache MySQL Passenger Capistrano to EC2</h1>
+    <section class="post-content">
+      <p>趁著這次手上剛好有個網站要 deploy 到 EC2，把摸索了一整天的經驗記錄下來。(多虧 ihower 與 xdite 兩位前輩的資源)</p>
+<p>首先先到 AWS 架好一個 instance，OS 我是選擇 Ubuntu 12.04 LTS。<br><a id="more"></a></p>
+<h4 id="系統更新">系統更新</h4>
+<pre><code>sudo apt-<span class="built_in">get</span> <span class="keyword">update</span>
+sudo apt-<span class="built_in">get</span> upgrade
+</code></pre><h4 id="安裝必要的套件">安裝必要的套件</h4>
+<pre><code><span class="built_in">sudo</span> apt-get install build-essential bison openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-<span class="number">0</span> libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev
+</code></pre><h4 id="安裝_Ruby">安裝 Ruby</h4>
+<p>版本可至<a href="http://www.ruby-lang.org/en/downloads/" target="_blank" rel="external">官網</a>選擇<br>    wget <a href="http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.3-p194.tar.gz" target="_blank" rel="external">http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.3-p194.tar.gz</a><br>    tar xvfz ruby-1.9.3-p194.tar.gz<br>    cd ruby-1.9.3-p194<br>    ./configure<br>    make<br>    sudo make install</p>
+<h4 id="安裝_MySQL">安裝 MySQL</h4>
+<pre><code>sudo apt-get install mysql-<span class="keyword">server</span> mysql-<span class="keyword">common</span> mysql-<span class="keyword">client</span> libmysqlclient-dev
+</code></pre><h4 id="安裝_MySQL_Adapter">安裝 MySQL Adapter</h4>
+<pre><code>gem <span class="operator"><span class="keyword">install</span> mysql2</span>
+</code></pre><p>修改 Gemfile，在 production 加上：<br>    gem ‘mysql2’<br>修改 config/database.yml 設定檔。</p>
+<h4 id="安裝_Apache_+_Passenger">安裝 Apache + Passenger</h4>
+<pre><code>sudo apt-get <span class="operator"><span class="keyword">install</span> libcurl4-openssl-dev apache2-mpm-prefork apache2-prefork-dev libapr1-dev libaprutil1-dev
+sudo gem <span class="keyword">install</span> passenger
+sudo passenger-<span class="keyword">install</span>-apache2-<span class="keyword">module</span></span>
+</code></pre><p>Passenger 在安裝過程當中，會要求你把一段設定貼到 Apache 的設定檔裡頭，大概如下所示：（每台電腦出現的設定不一定會相同）<br>    LoadModule passenger_module /usr/local/lib/ruby/gems/1.9.1/gems/passenger-3.0.13/ext/apache2/mod_passenger.so<br>    PassengerRoot /usr/local/lib/ruby/gems/1.9.1/gems/passenger-3.0.13<br>    PassengerRuby /usr/local/bin/ruby<br>Apache 的設定檔通常是 /etc/apache2/apache2.conf</p>
+<p>接著還會出現一段設定，要求你指向 Rails 的專案位置<br>把這段貼到 /etc/apache2/httpd.conf 裡頭：</p>
+<p><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;VirtualHost *:80&gt;</span></div><div class="line">  <span class="keyword"><span class="common">ServerName</span></span> www.yourhost.com</div><div class="line">  <span class="comment"># !!! Be sure to point DocumentRoot to 'public'!</span></div><div class="line">  <span class="keyword"><span class="common">DocumentRoot</span></span> /somewhere/public</div><div class="line">  <span class="tag">&lt;Directory /somewhere/public&gt;</span></div><div class="line">     <span class="comment"># This relaxes Apache security settings.</span></div><div class="line">     <span class="keyword">AllowOverride</span> <span class="literal">all</span></div><div class="line">     <span class="comment"># MultiViews must be turned off.</span></div><div class="line">     <span class="keyword"><span class="common">Options</span></span> -MultiViews</div><div class="line">  <span class="tag">&lt;/Directory&gt;</span></div><div class="line"><span class="tag">&lt;/VirtualHost&gt;</span></div></pre></td></tr></table></figure><br>記得 ServerName 填你自己的，然後 somewhere 那邊則是填專案位置。</p>
+<h4 id="MySQL_設定">MySQL 設定</h4>
+<p>接下來設定 MySQL</p>
+<p><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">mysql -uroot -p</div><div class="line"><span class="operator"><span class="keyword">CREATE</span> <span class="keyword">DATABASE</span> database_name;</span></div><div class="line"><span class="operator"><span class="keyword">GRANT</span> <span class="keyword">ALL</span> <span class="keyword">PRIVILEGES</span> <span class="keyword">ON</span> datbase_name.*</span></div><div class="line">  <span class="keyword">TO</span> <span class="string">'username'</span>@<span class="string">'localhost'</span> <span class="keyword">IDENTIFIED</span> <span class="keyword">BY</span> <span class="string">'password'</span>;</div><div class="line">EXIT;</div></pre></td></tr></table></figure><br>針對專案裡的 config/database.yml:</p>
+<p><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">production:</div><div class="line">  adapter: mysql2</div><div class="line">  encoding: utf8</div><div class="line">  reconnect: <span class="literal">false</span></div><div class="line">  database: database_name</div><div class="line">  pool: <span class="number">5</span></div><div class="line">  username: username</div><div class="line">  password: password</div><div class="line">  host: localhost</div><div class="line">  </div></pre></td></tr></table></figure><br>接著執行：<br>    rake db:setup RAILS_ENV=”production”</p>
+<h4 id="安裝_Capistrano">安裝 Capistrano</h4>
+<p>在 Gemfile 裡頭新增：<br>    gem ‘capistrano’<br>接著執行：<br>    capify .<br>然後打開 Capistrano 新增的檔案 config/deploy.rb 來設定：</p>
+<p><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">set <span class="symbol">:user</span>, <span class="string">'username'</span></div><div class="line">set <span class="symbol">:domain</span>, <span class="string">'www.domain.com'</span></div><div class="line">set <span class="symbol">:application</span>, <span class="string">'app_name'</span></div><div class="line"></div><div class="line">set <span class="symbol">:repository</span>, <span class="string">'where your repo located'</span></div><div class="line">set <span class="symbol">:deploy_to</span>, <span class="string">'/home/<span class="subst">#{user}</span>/<span class="subst">#{domain}</span>'</span></div><div class="line">set <span class="symbol">:deploy_via</span>, <span class="symbol">:remote_cache</span></div><div class="line">set <span class="symbol">:scm</span>, <span class="string">'git'</span></div><div class="line">set <span class="symbol">:branch</span>, <span class="string">'master'</span></div><div class="line">set <span class="symbol">:scm_verbose</span>, <span class="keyword">true</span></div><div class="line">set <span class="symbol">:use_sudo</span>, <span class="keyword">false</span></div></pre></td></tr></table></figure><br>記得把最下面使用 Passenger 那段取消註解。</p>
+<p>最後執行：<br>    cap deploy:setup</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/07/20/deploy-rails-3-with-apache-mysql-passenger-capistrano-to-ec2/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/07/20/deploy-rails-3-with-apache-mysql-passenger-capistrano-to-ec2/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/07/20/deploy-rails-3-with-apache-mysql-passenger-capistrano-to-ec2/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/08/17/devise/">
+        ← Devise
+    </a>
+    
+    <span class="page-number">•</span>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

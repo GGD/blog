@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Delayed Job | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-08-21T05:46:00.000Z" itemprop="datePublished">
+          8月 21 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Delayed Job</h1>
+    <section class="post-content">
+      <p><a href="https://github.com/collectiveidea/delayed_job" target="_blank" rel="external">Delayed Job</a> 是一套非同步排程套件。<br><a id="more"></a></p>
+<p>有時候，當必須執行 process time 較久的 request 時，會因為要等待此 request 執行完畢而無法再做其他的 request 導致效率低落，此時如果把 process time 較久的 request 移到背後去執行，那就可以把原本要等候的時間拿來處理其他事。</p>
+<p>Rails 目前已有許多可執行背景作業的套件，而當中的 <a href="https://github.com/collectiveidea/delayed_job" target="_blank" rel="external">Delayed Job</a> 其特點是使用與此 application 相同的資料庫，並簡化許多的設定。此外，Delayed Job 提供了一個非常簡單的 interface，在呼叫任何方法之前加上 <code>delay</code>就可以改為背景作業。以下將以寄信作為範例：</p>
+<h4 id="安裝">安裝</h4>
+<p>Delayed Job 有許多不同的套件，由於此範例使用的是 ActiveRecord，因此選擇 <code>delayed_job_active_record</code> 套件。</p>
+<figure class="highlight"><figcaption><span>/Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'delayed_job_active_record'</span></div></pre></td></tr></table></figure><br>    $ bundle install<br>安裝套件：<br>    $ rails g delayed_job:active_record<br>        create  script/delayed_job<br>        chmod  script/delayed_job<br>        create  db/migrate/20120109185353_create_delayed_jobs.rb<br>由於會產生 migration 檔案，因此要再執行 <code>rake db:migrate</code> 來產生資料表。<br><br>設定完了之後，就執行 Delayed Job 的 Rake task：<code>jobs:work</code> 以開始背景作業。<br>    $ rake jobs:work<br>    [Worker(host:noonoo.home pid:3031)] Starting job worker<br><br>#### 使用<br>假設此範例的寄信需要花費 10 秒鐘（用 <code>sleep</code> 來模擬）：<br><figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">  <span class="variable">@newsletter</span> = <span class="constant">Newsletter</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  sleep <span class="number">10</span> <span class="comment"># simulate long newsletter delivery</span></div><div class="line">  <span class="variable">@newsletter</span>.update_attribute(<span class="symbol">:delivered_at</span>, <span class="constant">Time</span>.zone.now)</div><div class="line">  redirect_to newsletters_url, <span class="symbol">notice:</span> <span class="string">"Delivered newsletter."</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>首先將這段寄信的程式碼包到 model 裡頭，改為呼叫 <code>Newsletter</code> 的 <code>deliver</code> 方法 ：<br><figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">  <span class="variable">@newsletter</span> = <span class="constant">Newsletter</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  <span class="variable">@newsletter</span>.deliver</div><div class="line">  redirect_to newsletters_url, <span class="symbol">notice:</span> <span class="string">"Delivered newsletter."</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/newsletter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Newsletter</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">    sleep <span class="number">10</span> <span class="comment"># simulate long newsletter delivery</span></div><div class="line">    update_attribute(<span class="symbol">:delivered_at</span>, <span class="constant">Time</span>.zone.now)</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>用 <code>deliver</code> 方法包起來之後，就可以呼叫 <code>delay</code> 方法將寄信丟到背景作業了。<br><figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">  <span class="variable">@newsletter</span> = <span class="constant">Newsletter</span>.find(params[<span class="symbol">:id</span>])</div><div class="line">  <span class="variable">@newsletter</span>.delay.deliver</div><div class="line">  redirect_to newsletters_url, <span class="symbol">notice:</span> <span class="string">"Delivering newsletter."</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>這段程式碼會增加一筆 record 到 <code>delayed_jobs</code> 資料表當中，並告訴 Delayed Job 要用 <code>deliver</code> 方法來處理這個 instance    。<br><br>#### 簡化<br>上述那段程式碼可以更加簡化，不使用整個 newsletter instance，而是透過傳遞 <code>id</code> 來使用 <code>Newsletter</code> 類別：<br><figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">  <span class="constant">Newsletter</span>.delay.deliver(params[<span class="symbol">:id</span>])</div><div class="line">  redirect_to newsletters_url, <span class="symbol">notice:</span> <span class="string">"Delivering newsletter."</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br><figure class="highlight"><figcaption><span>/app/models/newsletter.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Newsletter</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span><span class="keyword">self</span>.deliver(id)</div><div class="line">    find(id).deliver</div><div class="line">  <span class="keyword">end</span></div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>deliver</div><div class="line">    sleep <span class="number">10</span> <span class="comment"># simulate long newsletter delivery</span></div><div class="line">    update_attribute(<span class="symbol">:delivered_at</span>, <span class="constant">Time</span>.zone.now)</div><div class="line">  <span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h4 id="Delay_方法的其他選項">Delay 方法的其他選項</h4>
+<p>Delayed Job 針對 <code>Delay</code> 方法提供了許多選項，其中一項是 <code>queue</code>，透過給定名稱的 queue，就可以指派不同的 worker 去處理對應的 queue。</p>
+<figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Newsletter.<span class="command">delay</span>(queue: <span class="string">"newsletter"</span>).deliver(params[:<span class="property">id</span>])</div></pre></td></tr></table></figure><br>另一個有用的選項是 <code>priority</code>，預設值是 0 ，表示優先處理。數字越小則優先處理程度越高，可設為負數。<br>此外，<code>run_at</code> 則是可以設定某個時間點再處理。<br><figure class="highlight"><figcaption><span>/app/controllers/newsletters_controller.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="filename">Newsletter.delay(queue</span>: <span class="string">"newsletter"</span>, priority: <span class="number">28</span>, run_at: <span class="number">5.</span><span class="filename">minutes.from_now).deliver(params[</span>:id])</div></pre></td></tr></table></figure><br>如果某個方法每次都要用 delay 來執行，就可以考慮在該類別裡面加上 <code>handle_asynchronously</code>，後面以 symbol 加上要呼叫的方法：<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongTasks</span></span></div><div class="line">  <span class="function"><span class="keyword">def</span> </span>send_mailer</div><div class="line">    <span class="comment"># Some other code</span></div><div class="line">  <span class="keyword">end</span></div><div class="line">  handle_asynchronously <span class="symbol">:send_mailer</span>, <span class="symbol">:priority</span> =&gt; <span class="number">20</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<h4 id="錯誤處理">錯誤處理</h4>
+<p>Delayed Job 也支援錯誤處理。可以設定成失敗後，會再次嘗試執行，但須注意會不會對後續其他作業產生影響。相關設定如：</p>
+<figure class="highlight"><figcaption><span>/config/initializers/delayed_job_config.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="literal">Delayed::Worker</span>.max_attempts = <span class="number">5</span></div><div class="line"><span class="literal">Delayed::Worker</span>.delay_jobs = !Rails.env.test?</div></pre></td></tr></table></figure><br>此段是針對 <code>Delayed::Worker</code> 來做設定。如果出現錯誤，就再嘗試最多 5 次；如果目前環境是 <code>test</code> 就停止執行。<br><br>#### 在 Production 環境執行 Delayed Job<br>到目前為止，是透過 <code>rake jobs:work</code> 來執行 Delayed Job，但在 production 環境下，要改成執行 script 資料夾裡頭的 <code>delayed_job</code> script：<br>    $ script/delayed_job start<br><br>如果在 development 環境下執行，可能會跳出錯誤訊息，說要使用 <code>daemons</code> gem：<br><figure class="highlight"><figcaption><span>/Gemfile</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">gem</span> <span class="string">'daemons'</span></div></pre></td></tr></table></figure>
+
+<pre><code><span class="variable">$ </span>bundle install
+</code></pre><p>再次輸入就會顯示執行成功：<br>    $ script/delayed_job start<br>    delayed_job: process with pid 1672 started.</p>
+<p>如果要停止，就輸入：<br>    $ script/delayed_job stop</p>
+<p>若要在 Capistrano 上使用 Delayed Job，可至 <a href="https://github.com/collectiveidea/delayed_job/wiki/Rails-3-and-Capistrano" target="_blank" rel="external">wiki</a> 查看。<br>若要使用 web 方式來監控 job queue，可使用 <a href="https://github.com/ejschmitt/delayed_job_web" target="_blank" rel="external">delayed_job_web</a> gem。<br>其他非同步排成套件還有 <a href="https://github.com/defunkt/resque" target="_blank" rel="external">Resque</a>、<a href="https://github.com/mperham/sidekiq" target="_blank" rel="external">Sidekiq</a> 等。  </p>
+<p>source: <a href="http://railscasts.com/" target="_blank" rel="external">RailsCasts</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/08/21/delayed-job/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/08/21/delayed-job/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/08/21/delayed-job/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/08/28/private-pub/">
+        ← Private Pub
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/08/17/devise/">
+        Devise →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>

@@ -63,6 +63,42 @@ Create a new
     </section>
   </article>
   
+  <article class="post">
+    <header class="post-header">
+      <span class="post-meta">
+      <time datetime="2014-09-16T07:19:56.000Z" itemprop="datePublished">
+          9月 16 2014
+      </time>
+    
+    
+    | 
+    <a href='/tags/Ruby-on-Rails/'>Ruby on Rails</a>
+    
+    
+</span>
+      <h2 class="post-title"><a href="/blog/2014/09/16/rails-size-length-count/">Rails 的 count, length 以及 size</a></h2>
+    </header>
+    <section class="post-excerpt">
+      <p>
+      
+        列出 count, length 以及 size 的特性：
+count
+
+使用 SQL query (SELECT COUNT(*) FROM…)
+不會儲存計算物件，每次執行 count 都會重新跑一次 SQL query
+速度比 length 快
+
+123456782.1.2 :001 &gt; collection = User.all ; nil =&gt; nil2.1.2 :002 &gt; collection.count 
+      
+      </p>
+      
+      <p>
+          <a href="/blog/2014/09/16/rails-size-length-count/" class="excerpt-link">Read More...</a>
+      </p>
+      
+    </section>
+  </article>
+  
   <nav class="pagination" role="pagination">
     
     <span class="page-number">Page  of </span>

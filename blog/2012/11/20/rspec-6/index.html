@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rspec(6) | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2012-11-20T13:47:00.000Z" itemprop="datePublished">
+          11月 20 2012
+      </time>
+    
+</span>
+    <h1 class="post-title">Rspec(6)</h1>
+    <section class="post-content">
+      <p><a href="http://rspec.info/" target="_blank" rel="external">Rspec</a> 是用來測試的一個套件，這邊簡單筆記一下教學<br><a id="more"></a></p>
+<h1 id="Custom_Matchers">Custom Matchers</h1>
+<p>假設目前有個 zombie 需要測試，並且預期 <code>name</code> 不可空白：</p>
+<figure class="highlight"><figcaption><span>app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	validates <span class="symbol">:name</span>, <span class="symbol">presence:</span> <span class="keyword">true</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">describe Zombie.rb</div><div class="line">	<span class="keyword">it</span> <span class="string">'validates presence of name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: nil)</div><div class="line">		zombie.valid?</div><div class="line">		zombie.errors.should have_key(:name)	<span class="comment"># 作用類似 include，但主要是針對 hash</span></div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>像此類的測試其實常常會出現，因此該如何簡化這段 spec，則是要用 custom matchers （比如說客制一個 <code>validate_presence_of_name</code> 之類）來解決。</p>
+<figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">describe Zombie.rb</div><div class="line">	<span class="keyword">it</span> <span class="string">'validates presence of name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: nil)</div><div class="line">		zombie.should validate_presence_of_name</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>我們可以建立一個 custom matcher 放到 <code>spec/support</code> 資料夾底下，命名為 <code>validate_presence_of_name.rb</code>，並把剛剛那段測試的 spec 放進來：</p>
+<figure class="highlight"><figcaption><span>spec/support/validate_presence_of_name.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">ValidatePresenceOfName</span></span></div><div class="line">	<span class="class"><span class="keyword">class</span> <span class="title">Matcher</span></span></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>matches?(model)</div><div class="line">			model.valid?</div><div class="line">			model.errors.has_key?(<span class="symbol">:name</span>)</div><div class="line">		<span class="keyword">end</span></div><div class="line">	<span class="keyword">end</span></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>validate_presence_of_name</div><div class="line">		<span class="constant">Matcher</span>.new</div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div><div class="line"></div><div class="line"><span class="constant">RSpec</span>.configure <span class="keyword">do</span> |config|</div><div class="line">	config.<span class="keyword">include</span> <span class="constant">ValidatePresenceOfName</span>, <span class="symbol">type:</span> <span class="symbol">:model</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>上面的 <code>matches?</code> method 會回傳 <code>true</code> 或 <code>false</code>；若是 <code>false</code> 則 expectation 會失敗。<br>而下面的 <code>validate_presence_of_name</code> 則是新增一個 <code>Matcher</code> instance。<br>最後則是設定 Rspec 要 include 這個 custom matcher。在實務上通常會設定 custom matcher 的 <code>type</code>，比如此例設定為 <code>model</code>，表示此 matcher 只能用在 model specs。<br>接著執行 Rspec 看看，其結果顯示為通過：<br>    $ rspec spec/models/zombie_spec.rb<br>    Zombie<br>        validates presence of name</p>
+<pre><code>Finished <span class="operator">in</span> <span class="number">0.01032</span> <span class="built_in">seconds</span>
+<span class="number">1</span> examples, <span class="number">0</span> failures
+</code></pre><h1 id="Modular_matchers">Modular matchers</h1>
+<p>一切看似美好，但如果是要測試沒有 <code>name</code> attribute 的 model 時，這個 matcher 就沒有用處了。<br>為了增加其可用性，我們可以把剛剛的 custom matcher 改為可以接受 param，這樣一來就可以傳入任何的 attribute 了。<br>在還沒有改變剛剛的 custom matcher 前，如果此時硬是傳入 param 並執行，Rspec 會噴出下列錯誤：<br>    $ rspec spec/models/zombie_spec.rb<br>    Zombie<br>        validates presence of name</p>
+<pre><code>Failures:
+<span class="number">1</span>) Zombie <span class="keyword">has</span> errors <span class="keyword">on</span> name
+Failure/Error: zombie.should validate_presence_of(:name)
+NoMethodError:
+    undefined <span class="function"><span class="keyword">method</span> `<span class="title">validate_presence_of</span>' <span class="title">for</span> #&lt;<span class="title">RSpec</span>:</span>:Core&gt;
+    # ./spec/models/zombie.rb:<span class="number">5</span>:<span class="keyword">in</span> `<span class="keyword">block</span> (<span class="number">2</span> levels) <span class="keyword">in</span> &lt;top (required)&gt;<span class="string">'</span>
+</code></pre><p>接下來就是要修正這些錯誤：</p>
+<figure class="highlight"><figcaption><span>spec/support/validate_presence_of.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">ValidatePresenceOf</span></span></div><div class="line">	<span class="class"><span class="keyword">class</span> <span class="title">Matcher</span></span></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>initialize(attribute)</div><div class="line">			<span class="variable">@attribute</span> = attribute	<span class="comment"># 2) 將 attribute 存起來</span></div><div class="line">		<span class="keyword">end</span></div><div class="line"></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>matches?(model)</div><div class="line">			model.valid?</div><div class="line">			model.errors.has_key?(<span class="variable">@attribute</span>)	<span class="comment"># 3) 使用存起來的 attribute</span></div><div class="line">		<span class="keyword">end</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">def</span> </span>validate_presence_of(attribute)	<span class="comment"># 1) 接收 attribute</span></div><div class="line">		<span class="constant">Matcher</span>.new(attribute)</div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>再度執行 Rspec … pass!</p>
+<h1 id="Matcher_failures">Matcher failures</h1>
+<p>如果此時把 <code>zombie</code> class 裡的檢驗 <code>name</code> 是否空白給註解掉會如何呢？</p>
+<figure class="highlight"><figcaption><span>app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	<span class="comment"># validates :name, presence: true</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>在此狀況下執行 Rspec 的話，會出現下列錯誤：<br>    $ rspec spec/models/zombie_spec.rb<br>    Zombie<br>        validates presence of name</p>
+<pre><code><span class="type">Failures</span>:
+
+<span class="number">1</span>) <span class="type">Zombie</span> validates presence <span class="keyword">of</span> name
+    <span class="type">Failure</span>/<span class="type">Error</span>: zombie.should validate_presence_of(:name)
+        <span class="type">NoMethodError</span>: undefined <span class="keyword">method</span> `failure_message'
+
+<span class="type">Finished</span> <span class="keyword">in</span> <span class="number">0</span>.<span class="number">03512</span> seconds
+<span class="number">1</span> example, <span class="number">1</span> failures
+</code></pre><p>上述的錯誤表示我們的 custom matcher 沒有 <code>failure message</code>。<br>接下來就是修正錯誤：</p>
+<figure class="highlight"><figcaption><span>spec/support/validate_presence_of.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">ValidatePresenceOf</span></span></div><div class="line">	<span class="class"><span class="keyword">class</span> <span class="title">Matcher</span></span></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>matches?(model)</div><div class="line">			<span class="variable">@model</span> = model	<span class="comment"># 存成 instance variable 以供下面的 message 此用</span></div><div class="line">			<span class="variable">@model</span>.valid?</div><div class="line">			<span class="variable">@model</span>.errors.has_key?(<span class="variable">@attribute</span>)</div><div class="line">		<span class="keyword">end</span></div><div class="line"></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>failure_message</div><div class="line">			<span class="string">"<span class="subst">#{<span class="variable">@model</span>.<span class="keyword">class</span>}</span> failed to validate :<span class="subst">#{<span class="variable">@attribute</span>}</span> presence."</span></div><div class="line">		<span class="keyword">end</span></div><div class="line"></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>negative_failure_message</div><div class="line">			<span class="string">"<span class="subst">#{<span class="variable">@model</span>.<span class="keyword">class</span>}</span> validated :<span class="subst">#{<span class="variable">@attribute</span>}</span> presence."</span></div><div class="line">		<span class="keyword">end</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>再度執行 Rspec，就會出現剛剛在 custom matcher 所設定的錯誤訊息了(<code>Expected Zombie to error on :name presence</code>)：<br>    $ rspec spec/models/zombie_spec.rb<br>    Zombie<br>        validates presence of name</p>
+<pre><code>Failures:
+
+<span class="number">1</span>) Zombie validates presence <span class="keyword">of</span> <span class="property">name</span>
+    Failure/Error: zombie.should validate_presence_of(:<span class="property">name</span>)
+        Expected Zombie <span class="keyword">to</span> <span class="keyword">error</span> <span class="function_start"><span class="keyword">on</span></span> :<span class="property">name</span> presence
+
+Finished <span class="keyword">in</span> <span class="number">0.03067</span> seconds
+<span class="number">1</span> example, <span class="number">1</span> failures
+</code></pre><h1 id="Chained_methods">Chained methods</h1>
+<p>現在回到 <code>zombie</code> class 中，再把 <code>validates</code> 反註解掉，並加上 custom message 以便於在出錯時顯示：</p>
+<figure class="highlight"><figcaption><span>app/models/zombie.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zombie</span> <span class="inheritance">&lt; <span class="parent">ActiveRecord::Base</span></span></span></div><div class="line">	validates <span class="symbol">:name</span>, <span class="symbol">presence:</span> { <span class="symbol">message:</span> <span class="string">'been eaten'</span> }</div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure><br>此時如果用 custom matcher 來測試時，又會如何顯示呢？<br>其中一個方法是在後面加上自訂的 <code>with_message</code> method 然後傳入錯誤訊息：<br><figure class="highlight"><figcaption><span>spec/models/zombie_spec.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">describe Zombie <span class="built_in">do</span></div><div class="line">	<span class="keyword">it</span> <span class="string">'validates presence of name'</span> <span class="built_in">do</span></div><div class="line">		zombie = Zombie.<span class="built_in">new</span>(name: nil)</div><div class="line">		zombie.should validate_presence_of(:name).</div><div class="line">			with_message(<span class="string">'been eaten'</span>)</div><div class="line">	<span class="function"><span class="keyword">end</span></span></div><div class="line"><span class="function"><span class="keyword">end</span></span></div></pre></td></tr></table></figure>
+
+<p>在 custom matcher 也要新增 <code>with_message</code> method：</p>
+<figure class="highlight"><figcaption><span>spec/support/validate_presence_of.rb</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">module</span> <span class="title">ValidatePresenceOf</span></span></div><div class="line">	<span class="class"><span class="keyword">class</span> <span class="title">Matcher</span></span></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>initialize(attribute)</div><div class="line">			<span class="variable">@attribute</span> = attribute</div><div class="line">			<span class="variable">@message</span> = <span class="string">"can't be blank"</span>	<span class="comment"># 1) Rails 對於 presence 預設的錯誤訊息</span></div><div class="line">		<span class="keyword">end</span></div><div class="line">		</div><div class="line">		<span class="function"><span class="keyword">def</span> </span>matches?(model)</div><div class="line">			<span class="variable">@model</span> = model</div><div class="line">			<span class="variable">@model</span>.valid?</div><div class="line">			errors = <span class="variable">@model</span>.errors(<span class="variable">@attribute</span>)</div><div class="line">			errors.any? { |error| error == <span class="variable">@message</span> }	<span class="comment"># 3) 比對錯誤訊息</span></div><div class="line">		<span class="keyword">end</span></div><div class="line"></div><div class="line">		<span class="function"><span class="keyword">def</span> </span>with_message(message)</div><div class="line">			<span class="variable">@message</span> = message	<span class="comment"># 2) 覆蓋掉預設的錯誤訊息</span></div><div class="line">			<span class="keyword">self</span></div><div class="line">		<span class="keyword">end</span></div><div class="line">	<span class="keyword">end</span></div><div class="line"><span class="keyword">end</span></div></pre></td></tr></table></figure>
+
+<p>再次執行 Rspec 之後就可以 pass 了！</p>
+<h1 id="More_custom_matchers">More custom matchers</h1>
+<p><a href="https://github.com/thoughtbot/shoulda-matchers" target="_blank" rel="external">shoulda-matchers</a> gem 裡頭有許多實用的 custom matchers。  </p>
+<p>source: <a href="http://www.codeschool.com/" target="_blank" rel="external">Code School</a></p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2012/11/20/rspec-6/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2012/11/20/rspec-6/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2012/11/20/rspec-6/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <a class="newer-posts" href="/blog/2012/11/21/model/">
+        ← Model
+    </a>
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2012/11/20/rspec-5/">
+        Rspec(5) →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>
