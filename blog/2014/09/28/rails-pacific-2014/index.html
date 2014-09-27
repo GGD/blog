@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" >
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <title>Rails Pacific 2014 Experience | Ga Tech</title>
+  <meta name="description" content="1.01 everyday" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" type="text/css" href="/css/screen.css" />
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Noto+Serif:400,700,400italic|Open+Sans:700,400" />
+
+  <meta name="generator" content="Ga Tech">
+
+  
+  
+  
+
+  
+</head>
+
+
+<body class="post-template">
+
+  <header class="site-head"  style="background-image: url(//blog.ghost.org/content/images/2013/Nov/cover.png)" >
+    <div class="vertical">
+        <div class="site-head-content inner">
+             <a class="blog-logo" href="/"><img src="//blog.ghost.org/content/images/2013/Nov/bloglogo_1-1.png" alt="Blog Logo"/></a> 
+            <h1 class="blog-title">Ga Tech</h1>
+            <h2 class="blog-description">1.01 everyday</h2>
+        </div>
+    </div>
+</header>
+  
+
+<main class="content" role="main">
+  <article class="post">
+    <span class="post-meta">
+      <time datetime="2014-09-27T16:47:07.000Z" itemprop="datePublished">
+          9月 28 2014
+      </time>
+    
+</span>
+    <h1 class="post-title">Rails Pacific 2014 Experience</h1>
+    <section class="post-content">
+      <p>趁著記憶猶新以及滿肚子燒肉還沒消化完畢（都飽到天靈蓋了）來寫一下 Rails Conf 2014 的心得。</p>
+<h1 id="DAY_1">DAY 1</h1>
+<p>這次的場地辦在張榮發基金會國際會議中心，地點實在讚到沒話說，離捷運站只要走路 5 ~ 10 分鐘即可到達（對其他縣市甚至是國外的參與者非常貼心）。  </p>
+<h2 id="Panel_Discussion_:_Refactoring">Panel Discussion : Refactoring</h2>
+<p>第一天早上是大神們的兩場座談，第一場是由 Ryan Bigg, Nick Sutterer, Akira Matsuda 以及 Shibata Hiroshi 分享 refactor 的經驗，由 Mark Chao 主持。<br>當中大概是四位講者互相吐苦水，Ryan 說他甚至有一個專案花了四個月的時間來 refactor…<br>其中印象比較深刻的是被問到對於 over refactoring 的看法：Akira 說他 over refactoring 的經驗是過度抽象化，有時候甚至是 commit 之後才覺得後悔；Ryan 認為有時候一些 method 只有在一個地方被呼叫到的話，就不應該抽出來，而是讓整個 function 一氣呵成；Nick 則不贊同 Ryan 的想法，他認為這些 method 即使是只有被呼叫一次，但如果抽出來能夠讓 code 可讀性變高，那還是應該要拆開比較好。  </p>
+<h2 id="Becoming_a_senior_developer">Becoming a senior developer</h2>
+<p>第二場是由 Richard Lee, Prem Sichanugrist, Richard Schneeman 以及 DingDing Ye 分享如何成為一個 senior developer，由 Kenneth Lee 主持。<br>其中印象比較深刻的是 Richard Schneeman 說他成為 senior developer 的方式是先 fake it，並透過教其他人的過程來教學相長(yeah, fake it until you make it)；Richard Lee 認為 senior developer 應該要會懂得 trace source code（例如 Rails）；Prem 則認為 senior developer 要會懂得自己 trouble shooting。<br>當中有人問到如何區別 lead developer 以及 project manamger。Richard Schneeman 給的答案很乾脆，如果你回 email 的時間大於 50%，那基本上就不算是 developer 了XD。</p>
+<h2 id="Workshop">Workshop</h2>
+<p>下午則是有三軌 workshop 同時進行，主題分別為 TDD，refactoring 以及 infrastructure setup。<br>我參加的是由 Richard Lee 所主持的 infrastructure setop: Chef Workshop / Immutable infrastructure，workshop 內容是讓參與者學會用 chef/kitchen 寫簡單的 recpie 到 vagrant 上面部署需要的套件，並用 serverspec 來測試這些 recipe 是否有正確執行。整場 workshop 分成四個進度來進行，步調不慍不火，Richard Lee 也介紹該如何透過閱讀 open source 來建立符合自己需求的 cookbook，會後還留下大段時間進行交流，看得出非常用心準備！</p>
+<h1 id="DAY_2">DAY 2</h1>
+<p>第二天其實是從 9:00 開始（比第一天早一小時），但似乎有些人沒有注意到而錯過開頭部分有點可惜。（給第二天遲到而錯過資訊的人：持 Rails Conf 2014 的名牌到天瓏書局買書會有折扣，永久有效！）  </p>
+<h2 id="Render_It!:_A_Deep_Dive_into_ActionView_and_Template_Engines">Render It!: A Deep Dive into ActionView and Template Engines</h2>
+<p>第一場是由 Akira Matsuda 分享他從 Rails 抽取 ActionView 的經驗（在 Rails 4.1 以後，ActionView 單獨抽成一個 gem），主要是嘗試 Rails 是否能在沒有 ActionView 的情況下還能正常運作；以及 nonRails App 是否能夠使用 ActionView。<br>結果發現即使在產生 Rails 專案時指定不要 require ActionView，Rails 還是可以 render 頁面（原本以為抽掉 ActionView 應該是不能 render 頁面才對），因為其他的 Rails core module 例如 ActionPack 還是會自己 require ActionView。<br>而在 nonRails App 底下透過 require ActionView 來 render 頁面的想法也是失敗的（render :text 有成功，但是 render :file 失敗），因為 render :file 會需要用到 <code>::Mime</code>，但是 <code>::Mime</code> 卻寫在 ActionPack 裡頭…<br>Akira 說他來 Rails Conf 的前兩天才發現這個 bug <a href="https://github.com/rails/rails/issues/17030" target="_blank" rel="external">https://github.com/rails/rails/issues/17030</a>，所以剛剛的分享都是做白工XD 但他也有提到一個不錯的想法，就是即使是 Rails 這麼大型的 open source project，你還是可以透過這類型的奇形怪招 idea 來找到 bug。<br>Akira 後半段則是分享 Erubis 當中一些奇怪的 monkey patch，以及 erb, haml 以及 slim 的效能。根據他的 benchmark，會發現這三者之中 slim 的效能最好，erb 次之（但跟 slim 相差無幾），haml 的效能則是無比的慘…（Akira 說他自己也是 haml 的 committer 之一XD），雖然他有針對 haml 進行效能改善，但依舊無法看到前兩者的車尾燈。</p>
+<h2 id="Zero_downtime_payment_platforms">Zero downtime payment platforms</h2>
+<p>這場由 Prem Sichanugrist 分享他實務上遇到的狀況，遇到 payment downtime 時候該如何處理。<br>Payment downtime 的原因有很多，諸如 request timeout，third party failed 等，無論哪個環節出錯就等於這個訂單失敗，也就等於流失一個客戶。<br>Prem 於是制定一個「可接受的風險」計劃：如果這個訂單是來自信賴的客戶，或是交易金額小於一定額度時，就算是遇到 payment downtime 時，也會因為訂單符合「可接受的風險」而讓訂單成立。<br>上述聽起來已經設想了大部分會遇到的狀況，但因為 Prem 他們的系統是放在 Heroku，而 Heroku 又是建在 AWS 上面，考慮到 2012/7 期間 AWS 曾經發生大規模 downtime，於是又衍生出下列的 solution：（會場中剛好有個講者 Richard Schneeman 是來自於 Heroku，當 Prem 講到受 AWS dowetime 影響時，Richard 整個裝死假裝在認真寫 code XDDD）<br>Prem 另外在 AWS 以外的 server 建立一個子系統稱為 chocolate，當一筆訂單 request 進來，透過 Akamai dynamic router 時會進行判斷，如果主系統的 respond time 大於一定時間就認定為 payment down 並把 request 導到 chocolate。此時 chocolate 會把 request 完整記錄起來並根據「可接受風險」來決定是否要讓這筆訂單成立。等到主系統回復狀態時，chocolate 再把這個 request 像 VCR 般地重新導到主系統。<br>Prem 也說這個方法有好有壞，好處是的確降低了 payment downtime 造成的損失；但壞處是整個系統設計起來非常複雜，而且由於 Heroku 會將 request 隨機導到不同的 Dynos，有時會遇到某些 Dyno 明明閒置，但 Heroku 卻把 reqeust 導到已經忙碌的 Dyno，造成該 request 因為需要等待其他的 reqeust 完成而被判斷為 request timeout。</p>
+<h2 id="Crafting_Rails_Culture">Crafting Rails Culture</h2>
+<p>這場由 Shibata Hiroshi 分享他的團隊在維護 PHP 以及 Rails 之間的經驗，可惜我對日語發音的英文比較不在行，所以基本上這場比較沒 follow 到 @_@，要等其他人的心得分享了…。</p>
+<h2 id="Better_Rails_by_Knowing_Better_Database">Better Rails by Knowing Better Database</h2>
+<p>這場由 Ding-ding Ye 分享 Rails 在使用 ActiveRecord 時，必須注意到的 SQL 觀念，例如 index, transaction… 等。由於這場比較偏技術性，主要內容都在講者投影片中，透過會後錄影可以學到不少知識。</p>
+<h2 id="Trailblazer_-_A_New_Architecture_For_Rails">Trailblazer - A New Architecture For Rails</h2>
+<p>這場由 Nick Sutterer 分享開發者不應被侷限在 Rails 的基本 MVC 架構，而應該適時地加入不同 layer 來提高程式碼的可讀性。<br>Nick 建議不要盲目地遵從 Rails MVC，他寫了一套 architecture 稱為 <a href="https://github.com/apotonick/trailblazer" target="_blank" rel="external">Trailblazer</a> 讓整個流程更富彈性及可讀性。<br>另外他也不喜歡 strong parameters 以及 nested attributes 的設計，認為前者不應該出現在 controller 中，而後者更是讓整個 model 以及 form 髒到不行，於是他針對這樣子的問題設計出了 <a href="https://github.com/apotonick/reform" target="_blank" rel="external">reform</a>，透過 reform 來決定哪些 attributes 可以通過，並解決了 nested attributes 冗長的寫法。<br>Nick 同時也對 helper 頗有微詞，認為 helper 是 functional 的寫法，非常難以閱讀。針對此問題他也設計了 <a href="https://github.com/apotonick/cells" target="_blank" rel="external">cells</a> 這個小型 MVC 讓整個 views 更趨向 OO。</p>
+<h2 id="Exception_Handling:_Designing_Robust_Software">Exception Handling: Designing Robust Software</h2>
+<p>這場由 ihower 分享 software 該如何處理 exception 以及各種 best practice。由於也是技術性內容，可搭配投影片更易吸收：<a href="http://www.slideshare.net/ihower/exception-handling-designing-robust-software-in-ruby" target="_blank" rel="external">http://www.slideshare.net/ihower/exception-handling-designing-robust-software-in-ruby</a></p>
+<h2 id="Ten_Years_of_Rails_Deployment">Ten Years of Rails Deployment</h2>
+<p>這場由 Engine Yard 的 Christopher Rigor 帶來 Rails 10 年回顧。由於是 Rails 人生跑馬燈，我也不知道該怎麼寫… @_@</p>
+<h2 id="Going_the_Distance">Going the Distance</h2>
+<p>這場由 Heroku 的 Richard Schneeman 分享他所寫的「英文建議字」演算法。<br>Richard 說他常因為拼錯字而困擾，比如 git commit 打成 git commmit，此時系統會很貼心地問你是不要想要打 “commit”。於是 Richard 就針對這方面的推薦字演算法來進行 survey ，並用 Ruby 來實現他所 survey 到的 Levenshtein algorithm。<a href="https://github.com/schneems/going_the_distance" target="_blank" rel="external">Going The Distance</a>  </p>
+<p>當中令我印象深刻的是，Richard 說他並非是想要不斷鑽研這方面的演算法，而是為了給與會者一個觀念：如果你對某個領域有興趣，就上台去 talk，之後就會有人問你是否有聽過 xxx 或試過 ooo，當然你一定會沒有，但與此同時你也就知道可以往 xxx 或 ooo 方向來努力了。  </p>
+<p>值得一提的小插曲：Richard 秀出他的 silde 說他是 Rails committer 排名第 47 位，然後…</p>
+<h2 id="Multitenancy_with_Rails">Multitenancy with Rails</h2>
+<p>然後 Ryan Bigg 一上台第一頁就秀出他的 slide 說他是 Rails committer 排名第 21 位，立馬給 Richard 一記悶棍 XDDD  </p>
+<p>這場由 Ryan Bigg 分享他對 multitenancy project 的實作以及看法，內容小偏技術性，可以從他的書 <a href="https://leanpub.com/multi-tenancy-rails" target="_blank" rel="external">Multitenancy with Rails</a> 來獲得更多資訊。</p>
+<h1 id="AFTER_PARTY">AFTER PARTY</h1>
+<p>第一次在國內吃到這麼豪華的 after party，我們是在「好客-酒吧燒烤」啤酒 + 燒烤吃到飽，當中餐點還有螃蟹，也是吃到飽…飽到吐。  </p>
+<ul>
+<li>然後外國講者實在也太愛啤酒，在前往 after party 途中我遇到 Nick，他還邊喝啤酒邊發送一瓶給我 =.=  </li>
+<li>因為我還蠻喜歡 Nick 抽取 layer 的思維，就順便問他幹嘛不乾脆自己寫一個 framework（Richard 還在旁邊說對啊可以叫 Nick on Rails），Nick 就說不行因為這樣就不能參加 Rails Conf 了 XDDD  </li>
+<li>外國講者似乎很期待明年的 Rails Conf，因為在南台灣，聽到有海灘又有啤酒整個眼睛發亮 =.=</li>
+<li>期間有遇到 Ryan 跟他說想要他的簽名但很可惜電子書無法簽，他立馬拿出 iphone6 開個不知什麼 app 叫我簽上名字說會再寄給我，心裡整個爽到 XD</li>
+</ul>
+<h1 id="WRAP_UP">WRAP UP</h1>
+<p>雖然有的人（包括我）覺得 $5000 的 conf 似乎有點貴，但場地、整體進度安排、workshop、分享的內容、會間餐點一直到最後的 after party 真的會讓你感覺值回票價！  </p>
+<p>Rails Pacific Conference 2015 @Kaohsiung 我們明年見！</p>
+
+    </section>
+    <footer class="post-footer">
+      <section class="author">
+    <h4>GaDii</h4>
+    <p>A Ruby on Rails developer.</p>
+</section>
+      <section class="share">
+    <h4>Share this post</h4>
+    <a class="icon-twitter" href="http://twitter.com/share?url=http://yoursite.com/blog/2014/09/28/rails-pacific-2014/"
+       onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+        <span class="hidden">Twitter</span>
+    </a>
+    <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://yoursite.com/blog/2014/09/28/rails-pacific-2014/"
+       onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+        <span class="hidden">Facebook</span>
+    </a>
+    <a class="icon-google-plus" href="https://plus.google.com/share?url=http://yoursite.com/blog/2014/09/28/rails-pacific-2014/"
+       onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+        <span class="hidden">Google+</span>
+    </a>
+</section>
+    </footer>
+  </article>
+  <nav class="pagination" role="pagination">
+    
+    <span class="page-number">•</span>
+    
+    <a class="older-posts" href="/blog/2014/09/16/rails-size-length-count/">
+        Rails 的 count, length 以及 size →
+    </a>
+    
+</nav>
+  <div id="comment" class="comments-area">
+    <h1 class="title"><a href="#disqus_comments" name="disqus_comments">Comments</a></h1>
+
+    
+    <div id="disqus_thread">
+        <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+    
+</div>
+</main>
+
+
+  
+<footer class="site-footer">
+  
+  <div class="inner">
+     <section class="copyright">All content copyright <a href="/">Ga Tech</a> &copy; 2014 &bull; All rights reserved.</section>
+     <section class="poweredby">Proudly published with <a class="icon-ghost" href="http://zespia.tw/hexo/">Hexo</a></section>
+  </div>
+</footer>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<script type="text/javascript" src="/js/jquery.fitvids.js"></script>
+<script type="text/javascript" src="/js/index.js"></script>
+
+
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33532364-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+
+
+<script type="text/javascript">
+    var disqus_shortname = 'GaDii';
+
+    (function(){
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+</body>
+</html>
